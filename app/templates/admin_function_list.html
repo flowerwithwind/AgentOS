@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - XHAgentOS</title>
+    <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <style>
+        body { padding: 15px; background: #f5f6fa; }
+        .page-title { font-size: 18px; font-weight: 600; color: #1a1a2e; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #e8e8e8; }
+        .page-title .layui-icon { font-size: 20px; margin-right: 6px; color: #1e9fff; }
+    </style>
+</head>
+<body>
+<div>
+    <div class="page-title"><i class="layui-icon layui-icon-set"></i> 功能管理</div>
+    <div style="margin-bottom:12px;">
+        <button class="layui-btn layui-btn-sm" onclick="openAdd()">
+            <i class="layui-icon layui-icon-add-1"></i> 新增功能
+        </button>
+    </div>
+    <table id="funcTable" lay-filter="funcTable"></table>
+</div>
+
+<script src="{{ static_url('lib/layui/layui.js') }}"></script>
+<script>
+function getCookie(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+}
+layui.$.ajaxSetup({
+    beforeSend: function(xhr) { xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf')); }
+});
+
+layui.use(['table', 'layer'], function(){
+    var table = layui.table, layer = layui.layer, $ = layui.$;
+    table.render({
+        elem: '#funcTable',
+        url: '/admin/functions/api',
+        page: false,
+        cols: [[
+            {type: 'numbers', title: '序号', width: 80, align: 'center'},
+            {field: 'name', title: '功能名称', minWidth: 140},
+            {field: 'icon', title: '图标', width: 100, align: 'center',
+                templet: function(d){ return d.icon ? '<i class="layui-icon '+d.icon+'"></i>' : '-'; }},
+            {field: 'url', title: 'URL', minWidth: 160},
+            {field: 'parent_id', title: '父级ID', width: 90, align: 'center'},
+            {field: 'sort_order', title: '排序', width: 80, align: 'center'},
+            {field: 'is_menu', title: '显示菜单', width: 100, align: 'center',
+                templet: function(d){ return d.is_menu ? '<span style="color:#5fb878;">是</span>' : '<span style="color:#8c8c8c;">否</span>'; }},
+            {title: '操作', width: 180, align: 'center',
+                templet: function(d){
+                    return '<a class="layui-btn layui-btn-xs" onclick="openEdit('+d.id+')">编辑</a>' +
+                           '<a class="layui-btn layui-btn-xs layui-btn-danger" onclick="delFunc('+d.id+')">删除</a>';
+                }}
+        ]]
+    });
+
+    window.openAdd = function() {
+        layer.open({ type:2, title:'新增功能', area:['550px','480px'],
+            content:'/admin/functions/add', end:function(){ table.reload('funcTable'); }});
+    };
+    window.openEdit = function(id) {
+        layer.open({ type:2, title:'编辑功能', area:['550px','480px'],
+            content:'/admin/functions/edit?id='+id, end:function(){ table.reload('funcTable'); }});
+    };
+    window.delFunc = function(id) {
+        layer.confirm('确定删除该功能？子功能和关联权限将一并删除。', {icon:3, title:'提示'}, function(idx){
+            $.post('/admin/functions/delete', {id:id}, function(res){
+                if(res.code===0){ layer.msg('删除成功', {icon:1}); table.reload('funcTable'); }
+                else { layer.msg(res.msg, {icon:2}); }
+            }); layer.close(idx);
+        });
+    };
+});
+</script>
+</body>
+</html>

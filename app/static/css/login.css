@@ -1,0 +1,267 @@
+/* 登录页 - 沉浸式响应式设计 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.login-wrapper {
+    display: flex;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 装饰性背景元素 */
+.login-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 40%, rgba(100, 149, 237, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(0, 198, 255, 0.06) 0%, transparent 50%);
+    animation: bgShift 20s ease-in-out infinite alternate;
+}
+
+@keyframes bgShift {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(-2%, -2%) rotate(3deg); }
+}
+
+/* 左侧品牌区 */
+.login-brand {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px;
+    position: relative;
+    z-index: 1;
+}
+
+.login-brand .logo-icon {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #4a90d9, #00c6ff);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 32px;
+    font-size: 28px;
+    color: #fff;
+    font-weight: bold;
+    box-shadow: 0 8px 32px rgba(74, 144, 217, 0.3);
+}
+
+.login-brand h1 {
+    font-size: 36px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+}
+
+.login-brand p {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.8;
+    max-width: 420px;
+}
+
+/* 右侧登录卡片 */
+.login-card-wrapper {
+    width: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+    z-index: 1;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 48px 40px 40px;
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+}
+
+.login-card .card-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.login-card .card-subtitle {
+    font-size: 14px;
+    color: #8c8c8c;
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.form-group .input-wrapper {
+    position: relative;
+}
+
+.form-group .input-wrapper .input-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #bfbfbf;
+    font-size: 16px;
+    pointer-events: none;
+    transition: color 0.3s;
+}
+
+.form-group .input-wrapper input {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px 0 44px;
+    border: 1.5px solid #e8e8e8;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #333;
+    background: #fafafa;
+    transition: all 0.3s;
+    outline: none;
+}
+
+.form-group .input-wrapper input:focus {
+    border-color: #4a90d9;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(74, 144, 217, 0.1);
+}
+
+.form-group .input-wrapper input:focus + .input-icon,
+.form-group .input-wrapper input:focus ~ .input-icon {
+    color: #4a90d9;
+}
+
+.form-group .input-wrapper input::placeholder {
+    color: #bfbfbf;
+}
+
+.login-btn {
+    width: 100%;
+    height: 48px;
+    background: linear-gradient(135deg, #4a90d9, #357abd);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 8px;
+}
+
+.login-btn:hover {
+    background: linear-gradient(135deg, #357abd, #2868a8);
+    box-shadow: 0 8px 24px rgba(74, 144, 217, 0.35);
+    transform: translateY(-1px);
+}
+
+.login-btn:active {
+    transform: translateY(0);
+}
+
+.error-msg {
+    background: #fff2f0;
+    border: 1px solid #ffccc7;
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: #ff4d4f;
+    font-size: 13px;
+    margin-bottom: 20px;
+    display: none;
+}
+
+.error-msg.show {
+    display: block;
+}
+
+.login-footer {
+    text-align: center;
+    margin-top: 24px;
+    font-size: 13px;
+    color: #8c8c8c;
+}
+
+/* 响应式 */
+@media (max-width: 900px) {
+    .login-wrapper {
+        flex-direction: column;
+    }
+
+    .login-brand {
+        padding: 40px 32px 20px;
+        align-items: center;
+        text-align: center;
+    }
+
+    .login-brand .logo-icon {
+        margin-bottom: 20px;
+    }
+
+    .login-brand h1 {
+        font-size: 28px;
+    }
+
+    .login-brand p {
+        max-width: 100%;
+    }
+
+    .login-card-wrapper {
+        width: 100%;
+        padding: 0 20px 40px;
+    }
+
+    .login-card {
+        padding: 36px 28px 32px;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-brand {
+        padding: 32px 20px 16px;
+    }
+
+    .login-brand h1 {
+        font-size: 24px;
+    }
+
+    .login-card {
+        padding: 28px 20px 24px;
+    }
+
+    .login-card .card-title {
+        font-size: 20px;
+    }
+}

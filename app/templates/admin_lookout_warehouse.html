@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - XHAgentOS</title>
+    <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            padding: 24px;
+            background: #0a0e17;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #c8d6e5;
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(88, 101, 242, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .page-wrap { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; }
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        .page-header h1 {
+            font-size: 24px; font-weight: 700;
+            background: linear-gradient(135deg, #00b4ff, #5865f2, #00ffc8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+        .header-actions { display: flex; gap: 10px; }
+
+        .filter-bar {
+            display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+            margin-bottom: 16px; padding: 14px 18px;
+            background: rgba(20, 30, 50, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.1);
+            border-radius: 10px;
+        }
+        .filter-bar label { font-size: 12px; color: rgba(200,214,229,0.5); white-space: nowrap; }
+        .filter-bar input, .filter-bar select {
+            padding: 6px 12px; border-radius: 6px;
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            background: rgba(0,0,0,0.3); color: #c8d6e5; font-size: 13px;
+            outline: none;
+        }
+        .filter-bar input:focus, .filter-bar select:focus { border-color: #00b4ff; }
+        .btn-neon {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 18px; border: none; border-radius: 8px;
+            cursor: pointer; font-size: 13px; font-weight: 500;
+            transition: all 0.3s; text-decoration: none;
+            background: linear-gradient(135deg, #00b4ff, #5865f2);
+            color: #fff; box-shadow: 0 4px 20px rgba(0, 180, 255, 0.25);
+        }
+        .btn-neon:hover { transform: translateY(-2px); }
+        .btn-deep {
+            background: linear-gradient(135deg, #00ffc8, #00b4ff);
+        }
+        .btn-deep:disabled {
+            opacity: 0.4; cursor: not-allowed; transform: none;
+        }
+
+        .toolbar {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 12px; padding: 10px 0;
+        }
+        .toolbar .sel-info { font-size: 13px; color: rgba(200,214,229,0.5); }
+
+        .table-wrap {
+            background: linear-gradient(145deg, rgba(20, 30, 50, 0.9), rgba(10, 14, 23, 0.95));
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 14px; text-align: left; font-size: 12px; }
+        th {
+            background: rgba(0, 180, 255, 0.08);
+            color: #00b4ff;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+        }
+        td { border-bottom: 1px solid rgba(255,255,255,0.03); color: #c8d6e5; }
+        tr:hover td { background: rgba(0, 180, 255, 0.05); }
+        .title-cell { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .title-cell a { color: #e8f0fe; text-decoration: none; }
+        .title-cell a:hover { color: #00b4ff; }
+        .cb-cell { width: 40px; text-align: center; }
+        .cb-cell input { accent-color: #00b4ff; cursor: pointer; }
+        .action-cell { width: 80px; text-align: center; }
+        .btn-view {
+            padding: 3px 10px; border-radius: 4px; font-size: 11px;
+            border: 1px solid rgba(0,180,255,0.3); background: transparent;
+            color: #00b4ff; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-view:hover { background: rgba(0,180,255,0.1); }
+        .btn-view.has-content { color: #2ed573; border-color: rgba(46,213,115,0.3); }
+
+        .pagination-wrap {
+            display: flex; justify-content: center; gap: 8px; padding: 20px 0;
+        }
+        .page-btn {
+            padding: 8px 16px; border-radius: 8px;
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            background: rgba(20, 30, 50, 0.6);
+            color: #c8d6e5; cursor: pointer; font-size: 13px; transition: all 0.3s;
+        }
+        .page-btn:hover { border-color: rgba(0, 180, 255, 0.5); }
+        .page-btn.active { border-color: #00b4ff; background: linear-gradient(135deg, rgba(0,180,255,0.2), rgba(88,101,242,0.2)); color: #fff; }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-info { display: flex; align-items: center; font-size: 13px; color: rgba(200,214,229,0.5); padding: 0 12px; }
+
+        /* 进度条 */
+        .progress-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); z-index: 999; justify-content: center; align-items: center;
+        }
+        .progress-overlay.show { display: flex; }
+        .progress-panel {
+            background: linear-gradient(145deg, rgba(20, 30, 50, 0.98), rgba(10, 14, 23, 0.98));
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            border-radius: 16px; padding: 30px 40px; min-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .progress-panel h3 { font-size: 18px; color: #00b4ff; margin-bottom: 20px; text-align: center; }
+        .progress-bar-outer {
+            width: 100%; height: 8px; background: rgba(255,255,255,0.05);
+            border-radius: 4px; overflow: hidden; margin-bottom: 12px;
+        }
+        .progress-bar-inner {
+            height: 100%; border-radius: 4px;
+            background: linear-gradient(90deg, #00b4ff, #00ffc8);
+            transition: width 0.5s ease;
+        }
+        .progress-stats {
+            display: flex; justify-content: space-between;
+            font-size: 13px; color: rgba(200,214,229,0.6); margin-bottom: 8px;
+        }
+        .progress-current {
+            font-size: 12px; color: rgba(200,214,229,0.4);
+            max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            margin-bottom: 8px;
+        }
+        .progress-errors {
+            max-height: 100px; overflow-y: auto; font-size: 11px;
+            color: #ff4757; margin-top: 8px;
+        }
+        .progress-errors div { padding: 2px 0; }
+
+        .toast-custom {
+            position: fixed; top: 20px; right: 20px; z-index: 99999;
+            padding: 12px 24px; border-radius: 8px; font-size: 14px;
+            background: rgba(0,0,0,0.85); color: #c8d6e5;
+            backdrop-filter: blur(10px);
+            animation: fadeInOut 2s ease forwards;
+        }
+        .toast-custom.success { border-left: 3px solid #2ed573; }
+        .toast-custom.error { border-left: 3px solid #ff4757; }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+<div class="page-wrap">
+    <div class="page-header">
+        <h1>数据仓库 <small>Data Warehouse</small></h1>
+        <div class="header-actions">
+            <button class="btn-neon btn-deep" id="btnDeepCollect" onclick="startDeepCollect()" disabled>
+                深度采集
+            </button>
+        </div>
+    </div>
+
+    <div class="filter-bar">
+        <label>采集源</label>
+        <select id="filterSource">
+            <option value="">全部</option>
+            {% for s in sources %}
+            <option value="{{ s['id'] }}">{{ s['name'] }}</option>
+            {% end %}
+        </select>
+        <label>关键词</label>
+        <input id="filterKeyword" placeholder="搜索标题/摘要..." style="width:160px;">
+        <label>起始时间</label>
+        <input id="filterDateFrom" type="date">
+        <label>截止时间</label>
+        <input id="filterDateTo" type="date">
+        <button class="btn-neon" onclick="loadData(1)">查询</button>
+        <button class="btn-neon" onclick="$('#filterSource').val('');$('#filterKeyword').val('');$('#filterDateFrom').val('');$('#filterDateTo').val('');loadData(1);" style="background:rgba(255,255,255,0.1);box-shadow:none;">重置</button>
+    </div>
+
+    <div class="toolbar">
+        <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="accent-color:#00b4ff;cursor:pointer;">
+        <label for="selectAll" style="font-size:12px;color:rgba(200,214,229,0.5);cursor:pointer;">全选</label>
+        <span class="sel-info" id="selInfo">已选 0 条</span>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th class="cb-cell"><input type="checkbox" id="headerSelectAll" onchange="toggleSelectAll(this)" style="accent-color:#00b4ff;cursor:pointer;"></th>
+                    <th>ID</th>
+                    <th>标题</th>
+                    <th>来源</th>
+                    <th>关键词</th>
+                    <th>摘要</th>
+                    <th>采集时间</th>
+                    <th class="action-cell">操作</th>
+                </tr>
+            </thead>
+            <tbody id="dataBody"></tbody>
+        </table>
+    </div>
+    <div class="pagination-wrap" id="pagination"></div>
+</div>
+
+<!-- 进度条弹窗 -->
+<div class="progress-overlay" id="progressOverlay">
+    <div class="progress-panel">
+        <h3 id="progressTitle">深度采集中...</h3>
+        <div class="progress-bar-outer">
+            <div class="progress-bar-inner" id="progressBar" style="width:0%"></div>
+        </div>
+        <div class="progress-stats">
+            <span id="progressStats">0 / 0</span>
+            <span id="progressStatus">准备中...</span>
+        </div>
+        <div class="progress-current" id="progressCurrent"></div>
+        <div class="progress-errors" id="progressErrors"></div>
+    </div>
+</div>
+
+<script src="{{ static_url('lib/layui/layui.js') }}"></script>
+<script>
+function getCookie(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+}
+var $ = layui.$;
+layui.$.ajaxSetup({
+    beforeSend: function(xhr) { xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf')); }
+});
+
+var currentPage = 1, totalCount = 0, pageSize = 20;
+var selectedIds = {};
+var currentData = [];
+var progressTimer = null;
+
+function showToast(msg, type) {
+    var t = $('<div class="toast-custom '+(type||'')+'">'+msg+'</div>');
+    $('body').append(t);
+    setTimeout(function(){ t.remove(); }, 2500);
+}
+
+function loadData(page) {
+    page = page || 1;
+    var params = 'page='+page+'&limit='+pageSize;
+    var sid = $('#filterSource').val();
+    var kw = $('#filterKeyword').val().trim();
+    var df = $('#filterDateFrom').val();
+    var dt = $('#filterDateTo').val();
+    if(sid) params += '&source_id='+sid;
+    if(kw) params += '&keyword='+encodeURIComponent(kw);
+    if(df) params += '&date_from='+df;
+    if(dt) params += '&date_to='+dt;
+
+    $.get('/admin/lookout/warehouse/api?'+params, function(res){
+        if(res.code !== 0) return;
+        totalCount = res.count;
+        currentPage = page;
+        currentData = res.data || [];
+        renderTable(currentData);
+        renderPagination();
+        updateSelectedInfo();
+    });
+}
+
+function renderTable(data) {
+    var html = '';
+    if(!data || data.length === 0) {
+        html = '<tr><td colspan="8" style="text-align:center;padding:40px;color:rgba(200,214,229,0.3);">暂无数据</td></tr>';
+        $('#dataBody').html(html);
+        return;
+    }
+    data.forEach(function(r){
+        var title = r.title || '无标题';
+        var summary = r.summary || '';
+        var summaryDisplay = summary.length > 60 ? summary.substr(0,60)+'...' : summary;
+        var checked = selectedIds[r.id] ? 'checked' : '';
+        var url = r.url || '';
+        html += '<tr>';
+        html += '<td class="cb-cell"><input type="checkbox" value="'+r.id+'" '+checked+' onchange="toggleRow(this)"></td>';
+        html += '<td>'+r.id+'</td>';
+        html += '<td class="title-cell" title="'+(url || '')+'">'+(url?'<a href="'+url+'" target="_blank">':'')+title+(url?'</a>':'')+'</td>';
+        html += '<td>'+(r.source_name_label || r.source_name || '-')+'</td>';
+        html += '<td>'+r.keyword+'</td>';
+        html += '<td style="color:rgba(200,214,229,0.5);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+summary+'">'+summaryDisplay+'</td>';
+        html += '<td>'+r.collected_at+'</td>';
+        html += '<td class="action-cell"><button class="btn-view '+(r.full_content ? 'has-content' : '')+'" onclick="viewContent('+r.id+')">'+(r.full_content ? '已采' : '查看')+'</button></td>';
+        html += '</tr>';
+    });
+    $('#dataBody').html(html);
+    $('#headerSelectAll').prop('checked', false);
+}
+
+function toggleRow(el) {
+    var id = parseInt(el.value);
+    if(el.checked) selectedIds[id] = true;
+    else delete selectedIds[id];
+    updateSelectedInfo();
+}
+
+function toggleSelectAll(el) {
+    var checked = el.checked;
+    $('input[type="checkbox"]').prop('checked', checked);
+    if(checked) {
+        currentData.forEach(function(r){ selectedIds[r.id] = true; });
+    } else {
+        currentData.forEach(function(r){ delete selectedIds[r.id]; });
+    }
+    updateSelectedInfo();
+}
+
+function updateSelectedInfo() {
+    var cnt = Object.keys(selectedIds).length;
+    $('#selInfo').text('已选 '+cnt+' 条');
+    $('#btnDeepCollect').prop('disabled', cnt === 0);
+}
+
+function renderPagination() {
+    var totalPages = Math.ceil(totalCount / pageSize);
+    if(totalPages <= 1) { $('#pagination').empty(); return; }
+    var html = '';
+    html += '<button class="page-btn" onclick="loadData(1)" '+(currentPage<=1?'disabled':'')+'>&laquo;</button>';
+    html += '<button class="page-btn" onclick="loadData('+(currentPage-1)+')" '+(currentPage<=1?'disabled':'')+'>&lsaquo;</button>';
+    var start = Math.max(1, currentPage-2), end = Math.min(totalPages, currentPage+2);
+    for(var i=start; i<=end; i++){
+        html += '<button class="page-btn'+(i===currentPage?' active':'')+'" onclick="loadData('+i+')">'+i+'</button>';
+    }
+    html += '<button class="page-btn" onclick="loadData('+(currentPage+1)+')" '+(currentPage>=totalPages?'disabled':'')+'>&rsaquo;</button>';
+    html += '<button class="page-btn" onclick="loadData('+totalPages+')" '+(currentPage>=totalPages?'disabled':'')+'>&raquo;</button>';
+    html += '<span class="page-info">共 '+totalCount+' 条</span>';
+    $('#pagination').html(html);
+}
+
+// ====== 深度采集 ======
+
+function startDeepCollect() {
+    var ids = Object.keys(selectedIds);
+    if(ids.length === 0) { showToast('请先选择要采集的数据', 'error'); return; }
+
+    if(progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+
+    $('#progressOverlay').addClass('show');
+    $('#progressTitle').text('深度采集中...');
+    $('#progressBar').css('width', '0%');
+    $('#progressStats').text('0 / ' + ids.length);
+    $('#progressStatus').text('启动中...');
+    $('#progressCurrent').text('');
+    $('#progressErrors').empty();
+
+    $.post('/admin/lookout/warehouse/deep-collect', {
+        record_ids: ids.join(',')
+    }, function(res){
+        if(res.code === 0) {
+            pollProgress(res.task_id);
+        } else {
+            $('#progressOverlay').removeClass('show');
+            showToast(res.msg, 'error');
+        }
+    });
+}
+
+function pollProgress(taskId) {
+    progressTimer = setInterval(function(){
+        $.get('/admin/lookout/warehouse/deep-collect/progress?task_id=' + taskId, function(res){
+            if(res.code !== 0) return;
+            var p = res.data;
+            var pct = p.total > 0 ? Math.round(p.completed / p.total * 100) : 0;
+            $('#progressBar').css('width', pct + '%');
+            $('#progressStats').text(p.completed + ' / ' + p.total);
+            $('#progressCurrent').text(p.current ? '当前: ' + p.current : '');
+
+            if(p.status === 'running') {
+                $('#progressStatus').text('采集中...');
+            } else if(p.status === 'done') {
+                $('#progressStatus').text('完成!');
+                $('#progressTitle').text('采集完成');
+                clearInterval(progressTimer);
+                progressTimer = null;
+                setTimeout(function(){
+                    $('#progressOverlay').removeClass('show');
+                    showToast('深度采集完成，共 ' + p.completed + ' 条', 'success');
+                    loadData(currentPage);
+                }, 1500);
+            } else if(p.status === 'error') {
+                $('#progressStatus').text('出错');
+                clearInterval(progressTimer);
+                progressTimer = null;
+                setTimeout(function(){
+                    $('#progressOverlay').removeClass('show');
+                    showToast('采集出错', 'error');
+                }, 2000);
+            }
+
+            if(p.errors && p.errors.length > 0) {
+                var errHtml = '';
+                p.errors.forEach(function(e){ errHtml += '<div>'+e+'</div>'; });
+                $('#progressErrors').html(errHtml);
+            }
+        });
+    }, 800);
+}
+
+function viewContent(recordId) {
+    $.get('/admin/lookout/warehouse/deep-collect/content?id=' + recordId, function(res){
+        if(res.code === 0 && res.data) {
+            var d = res.data;
+            var content = d.full_content || '暂无内容';
+            var layer = layui.layer;
+            layer.open({
+                type: 1,
+                title: d.title || '内容详情',
+                content: '<div style="padding:20px;max-height:500px;overflow-y:auto;color:#c8d6e5;font-size:13px;line-height:1.8;white-space:pre-wrap;word-break:break-all;">' + escapeHtml(content) + '</div>',
+                area: ['700px', '500px']
+            });
+        } else {
+            showToast(res.msg || '暂无内容', 'error');
+        }
+    });
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+loadData(1);
+</script>
+</body>
+</html>

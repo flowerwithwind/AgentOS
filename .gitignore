@@ -1,0 +1,45 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Database
+database/*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+*.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+
+# Prompts（个人提示词记录，不上传）
+提示词_向党.md
+提示词_陈陆雷.md
+提示词_赵海蓺.md
+提示词_廖柯淞.md
+提示词_陈晓乐.md
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Logs
+*.log

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - XHAgentOS</title>
+    <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <style>
+        html, body { height: 100%; margin: 0; }
+        .layui-layout-admin .layui-header {
+            background: #1a1a2e;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            height: 50px;
+            line-height: 50px;
+        }
+        .layui-layout-admin .layui-header .header-title {
+            float: left;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            padding: 0 24px;
+            letter-spacing: 1px;
+        }
+        .layui-layout-admin .layui-header .header-title span {
+            color: #5fb878;
+        }
+        .layui-layout-admin .layui-header .header-user {
+            float: right;
+            color: rgba(255,255,255,0.7);
+            padding: 0 24px;
+            font-size: 14px;
+        }
+        .layui-layout-admin .layui-side {
+            background: #1a1a2e;
+            top: 50px;
+        }
+        .layui-layout-admin .layui-side .layui-nav-tree {
+            background: transparent;
+        }
+        .layui-layout-admin .layui-side .layui-nav-tree .layui-nav-item a {
+            color: rgba(255,255,255,0.65);
+            transition: all 0.3s;
+        }
+        .layui-layout-admin .layui-side .layui-nav-tree .layui-nav-item a:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.05);
+        }
+        .layui-layout-admin .layui-side .layui-nav-tree .layui-this a {
+            color: #fff;
+            background: rgba(95,184,120,0.15);
+        }
+        .layui-layout-admin .layui-body {
+            top: 50px;
+            left: 220px;
+            background: #f5f6fa;
+            overflow: hidden;
+        }
+        .layui-layout-admin .layui-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .layui-layout-admin .layui-logo { display: none; }
+        .sidebar-top {
+            height: 50px;
+            line-height: 50px;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .sidebar-top .layui-icon {
+            font-size: 14px;
+            margin-right: 4px;
+        }
+        .layui-nav-item .layui-nav-child { background: rgba(0,0,0,0.15); }
+        .layui-nav-item .layui-nav-child a { padding-left: 44px; }
+    </style>
+</head>
+<body>
+<div class="layui-layout layui-layout-admin">
+    <!-- 顶部 -->
+    <div class="layui-header">
+        <div class="header-title">XHAgentOS <span>管理后台</span></div>
+        <div class="header-user">
+            <a href="/user/chat" target="_blank" style="color:#5fb878;font-size:13px;margin-right:16px;">
+                <i class="layui-icon layui-icon-dialogue"></i> 进入智能问数
+            </a>
+            <i class="layui-icon layui-icon-username"></i> {{ username }}
+            &nbsp;
+            <a href="/auth/logout" style="color:rgba(255,255,255,0.5);font-size:13px;">退出</a>
+        </div>
+    </div>
+
+    <!-- 左侧菜单（动态加载） -->
+    <div class="layui-side">
+        <div class="sidebar-top">
+            <i class="layui-icon layui-icon-app"></i> 功能导航
+        </div>
+        <ul class="layui-nav layui-nav-tree" id="sideMenu"></ul>
+    </div>
+
+    <!-- 右侧工作区 -->
+    <div class="layui-body">
+        <iframe name="mainFrame" src="/admin/dashboard"></iframe>
+    </div>
+</div>
+
+<script src="{{ static_url('lib/layui/layui.js') }}"></script>
+<script>
+function getCookie(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+}
+layui.$.ajaxSetup({
+    beforeSend: function(xhr) { xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf')); }
+});
+
+layui.use(['element', 'layer'], function(){
+    var element = layui.element, $ = layui.$;
+
+    // 动态加载菜单
+    $.get('/admin/menus', function(res){
+        if(res.code === 0 && res.data){
+            var html = '';
+            res.data.forEach(function(item){
+                var hasChildren = item.children && item.children.length > 0;
+                var url = hasChildren ? 'javascript:;' : (item.url || 'javascript:;');
+                var target = (!hasChildren && url.indexOf('/user/') === 0) ? '_blank' : 'mainFrame';
+                var cls = hasChildren ? ' class="layui-nav-item"' : ' class="layui-nav-item"';
+                html += '<li'+cls+'>';
+                html += '<a href="'+url+'" target="'+target+'">';
+                html += item.icon ? '<i class="layui-icon '+item.icon+'"></i> ' : '';
+                html += item.name;
+                if(hasChildren) html += '<span class="layui-nav-more"></span>';
+                html += '</a>';
+                if(hasChildren){
+                    html += '<dl class="layui-nav-child">';
+                    item.children.forEach(function(child){
+                        var childUrl = child.url || 'javascript:;';
+                        var childTarget = (childUrl.indexOf('/user/') === 0) ? '_blank' : 'mainFrame';
+                        html += '<dd><a href="'+childUrl+'" target="'+childTarget+'">';
+                        html += child.icon ? '<i class="layui-icon '+child.icon+'"></i> ' : '';
+                        html += child.name+'</a></dd>';
+                    });
+                    html += '</dl>';
+                }
+                html += '</li>';
+            });
+            $('#sideMenu').html(html);
+            element.render('nav');
+        }
+    });
+});
+</script>
+</body>
+</html>

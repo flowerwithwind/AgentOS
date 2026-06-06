@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数智大屏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #1a1a3e, #24243e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+        .header {
+            text-align: center;
+            padding: 16px 0 24px;
+            position: relative;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #5fb878, #1e9fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 4px;
+        }
+        .header .time {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+        }
+        .header .subtitle {
+            font-size: 13px;
+            color: rgba(255,255,255,0.35);
+            margin-top: 4px;
+            letter-spacing: 2px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s;
+        }
+        .stat-item:hover { transform: translateY(-4px); }
+        .stat-item .num {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(180deg, #fff, rgba(255,255,255,0.6));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-item .label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 6px;
+        }
+        .stat-item .icon-line {
+            font-size: 24px;
+            margin-bottom: 8px;
+            opacity: 0.6;
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .chart-box {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            padding: 16px;
+            backdrop-filter: blur(10px);
+        }
+        .chart-box h3 {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 12px;
+            padding-left: 8px;
+            border-left: 3px solid #5fb878;
+        }
+        .chart-box .chart-wrap {
+            width: 100%;
+            height: 300px;
+        }
+        .chart-box.full {
+            grid-column: 1 / -1;
+        }
+        .chart-box.full .chart-wrap { height: 250px; }
+
+        @media (max-width: 900px) {
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .charts-row { grid-template-columns: 1fr; }
+            .header .time { position: static; text-align: center; margin-top: 8px; }
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <div class="time" id="clock"></div>
+    <h1>XHAgentOS 数智大屏</h1>
+    <div class="subtitle">INTELLIGENT OVERVIEW DASHBOARD</div>
+</div>
+
+<div class="stats-row" id="statsRow">
+    <div class="stat-item"><div class="icon-line">👥</div><div class="num" id="userCount">-</div><div class="label">用户总数</div></div>
+    <div class="stat-item"><div class="icon-line">🤖</div><div class="num" id="modelCount">-</div><div class="label">模型引擎</div></div>
+    <div class="stat-item"><div class="icon-line">📡</div><div class="num" id="sourceCount">-</div><div class="label">采集源数</div></div>
+    <div class="stat-item"><div class="icon-line">📊</div><div class="num" id="recordCount">-</div><div class="label">采集记录</div></div>
+</div>
+
+<div class="charts-row">
+    <div class="chart-box">
+        <h3>各采集源数据分布</h3>
+        <div class="chart-wrap" id="pieChart"></div>
+    </div>
+    <div class="chart-box">
+        <h3>模型 Token 使用排行</h3>
+        <div class="chart-wrap" id="barChart"></div>
+    </div>
+</div>
+
+<div class="charts-row">
+    <div class="chart-box full">
+        <h3>近 7 天采集趋势</h3>
+        <div class="chart-wrap" id="lineChart"></div>
+    </div>
+</div>
+
+<script src="{{ static_url('lib/layui/layui.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+function getCookie(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+}
+
+// 实时时钟
+function updateClock(){
+    var now = new Date();
+    var s = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0')
+          + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock').textContent = s;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+layui.use(['layer'], function(){
+    var $ = layui.$;
+    $.ajaxSetup({
+        beforeSend: function(xhr) { xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf')); }
+    });
+
+    // Echarts 主题色
+    var colors = ['#5fb878', '#1e9fff', '#ffb800', '#f56c6c', '#909399',
+                  '#8c6bf5', '#36cfc9', '#ff85c0', '#ffc53d', '#597ef7'];
+
+    function initCharts(){
+        var pieChart = echarts.init(document.getElementById('pieChart'));
+        var barChart = echarts.init(document.getElementById('barChart'));
+        var lineChart = echarts.init(document.getElementById('lineChart'));
+
+        $.get('/admin/big-screen/api', function(res){
+            if(res.code !== 0) return;
+            var d = res.data;
+
+            // 统计卡片
+            document.getElementById('userCount').textContent = d.user_count;
+            document.getElementById('modelCount').textContent = d.model_count;
+            document.getElementById('sourceCount').textContent = d.source_count;
+            document.getElementById('recordCount').textContent = d.record_count;
+
+            // 饼图 - 各采集源数据分布
+            var pieData = (d.source_stats || []).length > 0 ? d.source_stats : [{name: '暂无数据', value: 1}];
+            pieChart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+                legend: {
+                    bottom: 0,
+                    textStyle: { color: 'rgba(255,255,255,0.5)', fontSize: 11 },
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '65%'],
+                    center: ['50%', '45%'],
+                    avoidLabelOverlap: true,
+                    itemStyle: {
+                        borderRadius: 6,
+                        borderColor: 'rgba(15,12,41,0.3)',
+                        borderWidth: 2
+                    },
+                    label: { show: false },
+                    emphasis: {
+                        label: { show: true, fontSize: 14, fontWeight: 'bold', color: '#fff' }
+                    },
+                    data: pieData.map(function(item, idx){
+                        return { value: item.value, name: item.name, itemStyle: { color: colors[idx % colors.length] } };
+                    })
+                }]
+            });
+
+            // 柱状图 - 模型Token使用排行
+            var barData = d.model_stats || [];
+            barChart.setOption({
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: barData.map(function(m){ return m.name; }),
+                    axisLabel: { color: 'rgba(255,255,255,0.4)', fontSize: 10 },
+                    axisLine: { show: false },
+                    axisTick: { show: false },
+                },
+                yAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)' },
+                },
+                series: [{
+                    type: 'bar',
+                    barWidth: '40%',
+                    data: barData.map(function(m, idx){
+                        return {
+                            value: m.tokens,
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: colors[idx % colors.length] },
+                                    { offset: 1, color: colors[idx % colors.length] + '33' }
+                                ]),
+                                borderRadius: [4, 4, 0, 0]
+                            }
+                        };
+                    }),
+                    label: {
+                        show: true,
+                        position: 'top',
+                        color: 'rgba(255,255,255,0.5)',
+                        fontSize: 10
+                    }
+                }]
+            });
+
+            // 折线图 - 近7天采集趋势
+            var trendData = d.trend || [];
+            var dates = trendData.map(function(t){ return t.date ? t.date.slice(5) : ''; });
+            var counts = trendData.map(function(t){ return t.count; });
+            if(dates.length === 0){ dates = ['暂无']; counts = [0]; }
+
+            lineChart.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                    boundaryGap: false,
+                    axisLabel: { color: 'rgba(255,255,255,0.4)' },
+                    axisLine: { show: false },
+                },
+                yAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.4)' },
+                },
+                series: [{
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 8,
+                    data: counts,
+                    lineStyle: { width: 3, color: '#5fb878' },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(95,184,120,0.3)' },
+                            { offset: 1, color: 'rgba(95,184,120,0)' }
+                        ])
+                    },
+                    itemStyle: { color: '#5fb878', borderColor: '#fff', borderWidth: 2 },
+                }]
+            });
+
+            // 窗口大小变化自适应
+            window.addEventListener('resize', function(){
+                pieChart.resize();
+                barChart.resize();
+                lineChart.resize();
+            });
+        });
+    }
+
+    initCharts();
+});
+</script>
+</body>
+</html>

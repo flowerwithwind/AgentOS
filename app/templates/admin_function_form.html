@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <style>
+        body { padding: 20px; background: #fff; }
+        .layui-form-label { width: 90px; }
+        .layui-input-block { margin-left: 120px; }
+    </style>
+</head>
+<body>
+<form class="layui-form" id="funcForm">
+    {% if func %}
+    <input type="hidden" name="id" value="{{ func['id'] }}">
+    {% end %}
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">功能名称</label>
+        <div class="layui-input-block">
+            <input type="text" name="name" required lay-verify="required"
+                   placeholder="请输入功能名称" class="layui-input"
+                   value="{{ func['name'] if func else '' }}">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">图标类名</label>
+        <div class="layui-input-block">
+            <input type="text" name="icon" placeholder="如 layui-icon-home" class="layui-input"
+                   value="{{ func['icon'] if func else '' }}">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">URL</label>
+        <div class="layui-input-block">
+            <input type="text" name="url" placeholder="如 /admin/users" class="layui-input"
+                   value="{{ func['url'] if func else '' }}">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">父级功能</label>
+        <div class="layui-input-block">
+            <select name="parent_id">
+                <option value="0">顶级功能</option>
+                {% for p in parents %}
+                <option value="{{ p['id'] }}" {% if func and func['parent_id'] == p['id'] %}selected{% end %}>
+                    {{ p['name'] }}
+                </option>
+                {% end %}
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">排序</label>
+        <div class="layui-input-block">
+            <input type="number" name="sort_order" value="{{ func['sort_order'] if func else '0' }}" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">显示在菜单</label>
+        <div class="layui-input-block">
+            <input type="checkbox" name="is_menu" value="1" title="显示"
+                   {% if not func or func['is_menu'] %}checked{% end %}>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit lay-filter="formSubmit">提交</button>
+            <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+    </div>
+</form>
+
+<script src="{{ static_url('lib/layui/layui.js') }}"></script>
+<script>
+function getCookie(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+}
+layui.$.ajaxSetup({
+    beforeSend: function(xhr) { xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf')); }
+});
+
+layui.use(['form', 'layer'], function(){
+    var form = layui.form, layer = layui.layer, $ = layui.$;
+    form.on('submit(formSubmit)', function(data){
+        var field = data.field;
+        field.is_menu = field.is_menu ? 1 : 0;
+        $.post(window.location.pathname, field, function(res){
+            if(res.code === 0){
+                layer.msg(res.msg, {icon:1, time:1000}, function(){
+                    parent.layer.close(parent.layer.getFrameIndex(window.name));
+                });
+            } else { layer.msg(res.msg, {icon:2}); }
+        });
+        return false;
+    });
+});
+</script>
+</body>
+</html>

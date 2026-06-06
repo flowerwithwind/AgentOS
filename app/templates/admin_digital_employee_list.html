@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - XHAgentOS</title>
+    <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <style>
+        body { padding: 15px; background: #f5f6fa; }
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e8e8e8;
+        }
+        .page-title .layui-icon {
+            font-size: 20px;
+            margin-right: 6px;
+            color: #1e9fff;
+        }
+        .toolbar {
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+        }
+        .avatar-cell {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #e8e8e8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 18px;
+        }
+        .avatar-cell img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="page-title">
+        <i class="layui-icon layui-icon-username"></i> 数字员工管理
+    </div>
+
+    <div class="toolbar">
+        <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="openAdd()">
+            <i class="layui-icon layui-icon-add-1"></i> 新增数字员工
+        </button>
+        <div class="search-box">
+            <input type="text" id="searchKeyword" placeholder="员工名称" class="layui-input" style="width: 200px;">
+            <button class="layui-btn layui-btn-sm" onclick="doSearch()">
+                <i class="layui-icon layui-icon-search"></i> 搜索
+            </button>
+        </div>
+    </div>
+
+    <table id="employeeTable" lay-filter="employeeTable"></table>
+</div>
+
+<script src="{{ static_url('lib/layui/layui.js') }}"></script>
+<script>
+var allSkills = [];
+
+function getCookie(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+}
+layui.$.ajaxSetup({
+    beforeSend: function(xhr) {
+        xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf'));
+    }
+});
+
+layui.use(['table', 'layer', 'form'], function(){
+    var table = layui.table;
+    var layer = layui.layer;
+    var $ = layui.$;
+    var form = layui.form;
+
+    // 获取所有技能
+    $.get('/admin/api/skill/all', function(res){
+        if(res.code === 0){
+            allSkills = res.data;
+        }
+    });
+
+    var tableIns = table.render({
+        elem: '#employeeTable',
+        url: '/admin/digital_employee/api',
+        page: {
+            limit: 10,
+            limits: [10, 20, 50]
+        },
+        cols: [[
+            {type: 'numbers', title: '序号', width: 70, align: 'center'},
+            {field: 'avatar_url', title: '头像', width: 70, align: 'center',
+                templet: function(d){
+                    if(d.avatar_url){
+                        return '<div class="avatar-cell"><img src="' + d.avatar_url + '" onerror="this.parentElement.innerText=\'' + d.name.charAt(0) + '\'"></div>';
+                    }
+                    return '<div class="avatar-cell">' + d.name.charAt(0) + '</div>';
+                }},
+            {field: 'name', title: '名称', minWidth: 120},
+            {field: 'welcome_message', title: '欢迎语', minWidth: 150,
+                templet: function(d){ return d.welcome_message || '-'; }},
+            {field: 'skill_names', title: '关联技能', minWidth: 150,
+                templet: function(d){ return d.skill_names || '-'; }},
+            {field: 'status', title: '状态', width: 100, align: 'center',
+                templet: function(d){
+                    var checked = d.status == 1 ? 'checked' : '';
+                    return '<input type="checkbox" name="status" value="' + d.id + '" lay-skin="switch" lay-text="启用|禁用" lay-filter="statusSwitch" ' + checked + '>';
+                }},
+            {field: 'create_at', title: '创建时间', width: 170, sort: true},
+            {title: '操作', width: 130, align: 'center',
+                templet: function(d){
+                    return '<a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>' +
+                           '<a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del">删除</a>';
+                }}
+        ]],
+        response: {
+            statusCode: 0
+        },
+        parseData: function(res){
+            return {
+                code: res.code,
+                msg: res.msg,
+                count: res.count,
+                data: res.data
+            };
+        }
+    });
+
+    // 搜索
+    window.doSearch = function() {
+        tableIns.reload({
+            where: { keyword: $('#searchKeyword').val() },
+            page: { curr: 1 }
+        });
+    };
+
+    // 回车搜索
+    $('#searchKeyword').on('keydown', function(e){
+        if(e.keyCode === 13) doSearch();
+    });
+
+    // 状态开关
+    form.on('switch(statusSwitch)', function(obj){
+        var id = this.value;
+        $.post('/admin/digital_employee/toggle', {id: id}, function(res){
+            if(res.code === 0){
+                layer.msg('状态已更新', {icon: 1});
+            } else {
+                layer.msg(res.msg, {icon: 2});
+                // 恢复原状态
+                obj.elem.checked = !obj.elem.checked;
+                form.render('checkbox');
+            }
+        });
+    });
+
+    // 监听工具条
+    table.on('tool(employeeTable)', function(obj){
+        var data = obj.data;
+        if(obj.event === 'edit'){
+            openEdit(data.id);
+        } else if(obj.event === 'del'){
+            layer.confirm('确定要删除该数字员工吗？', {icon: 3, title: '提示'}, function(index){
+                $.post('/admin/digital_employee/delete', {id: data.id}, function(res){
+                    if(res.code === 0){
+                        layer.msg('删除成功', {icon: 1});
+                        tableIns.reload();
+                    } else {
+                        layer.msg(res.msg, {icon: 2});
+                    }
+                });
+                layer.close(index);
+            });
+        }
+    });
+
+    // 生成技能多选HTML
+    function getSkillCheckboxHtml(selectedIds) {
+        var html = '<div class="layui-form-item"><label class="layui-form-label">关联技能</label><div class="layui-input-block" style="max-height:150px;overflow-y:auto;">';
+        allSkills.forEach(function(skill){
+            var checked = selectedIds && selectedIds.includes(skill.id) ? 'checked' : '';
+            html += '<input type="checkbox" name="skill_ids" value="' + skill.id + '" title="' + skill.name + '" ' + checked + '>';
+        });
+        html += '</div></div>';
+        return html;
+    }
+
+    // 新增弹窗
+    window.openAdd = function() {
+        layer.open({
+            type: 1,
+            title: '新增数字员工',
+            area: ['600px', '520px'],
+            content: '<form class="layui-form" style="padding: 20px;" lay-filter="addForm">' +
+                '<div class="layui-form-item">' +
+                    '<label class="layui-form-label">名称</label>' +
+                    '<div class="layui-input-block">' +
+                        '<input type="text" name="name" required lay-verify="required" placeholder="请输入数字员工名称" class="layui-input">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="layui-form-item">' +
+                    '<label class="layui-form-label">头像URL</label>' +
+                    '<div class="layui-input-block">' +
+                        '<input type="text" name="avatar_url" placeholder="头像图片地址（可选）" class="layui-input">' +
+                    '</div>' +
+                '</div>' +
+                '<div class="layui-form-item layui-form-text">' +
+                    '<label class="layui-form-label">欢迎语</label>' +
+                    '<div class="layui-input-block">' +
+                        '<textarea name="welcome_message" placeholder="用户调用时显示的欢迎语" class="layui-textarea"></textarea>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="layui-form-item layui-form-text">' +
+                    '<label class="layui-form-label">提示词</label>' +
+                    '<div class="layui-input-block">' +
+                        '<textarea name="system_prompt" placeholder="System Prompt（系统提示词）" class="layui-textarea" style="height:100px;"></textarea>' +
+                    '</div>' +
+                '</div>' +
+                getSkillCheckboxHtml([]) +
+                '<div class="layui-form-item">' +
+                    '<div class="layui-input-block">' +
+                        '<button class="layui-btn" lay-submit lay-filter="submitAdd">提交</button>' +
+                        '<button type="reset" class="layui-btn layui-btn-primary">重置</button>' +
+                    '</div>' +
+                '</div>' +
+            '</form>',
+            success: function(layero, index){
+                form.render();
+                form.on('submit(submitAdd)', function(data){
+                    var skillIds = [];
+                    $('input[name="skill_ids"]:checked').each(function(){
+                        skillIds.push($(this).val());
+                    });
+                    var postData = data.field;
+                    postData.skill_ids = skillIds.join(',');
+                    $.post('/admin/digital_employee/add', postData, function(res){
+                        if(res.code === 0){
+                            layer.msg('创建成功', {icon: 1});
+                            layer.close(index);
+                            tableIns.reload();
+                        } else {
+                            layer.msg(res.msg, {icon: 2});
+                        }
+                    });
+                    return false;
+                });
+            }
+        });
+    };
+
+    // 编辑弹窗
+    window.openEdit = function(id) {
+        $.get('/admin/digital_employee/get', {id: id}, function(res){
+            if(res.code !== 0){
+                layer.msg(res.msg, {icon: 2});
+                return;
+            }
+            var emp = res.data;
+            layer.open({
+                type: 1,
+                title: '编辑数字员工',
+                area: ['600px', '520px'],
+                content: '<form class="layui-form" style="padding: 20px;" lay-filter="editForm">' +
+                    '<input type="hidden" name="id" value="' + emp.id + '">' +
+                    '<div class="layui-form-item">' +
+                        '<label class="layui-form-label">名称</label>' +
+                        '<div class="layui-input-block">' +
+                            '<input type="text" name="name" required lay-verify="required" value="' + emp.name + '" class="layui-input">' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="layui-form-item">' +
+                        '<label class="layui-form-label">头像URL</label>' +
+                        '<div class="layui-input-block">' +
+                            '<input type="text" name="avatar_url" value="' + (emp.avatar_url || '') + '" class="layui-input">' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="layui-form-item layui-form-text">' +
+                        '<label class="layui-form-label">欢迎语</label>' +
+                        '<div class="layui-input-block">' +
+                            '<textarea name="welcome_message" class="layui-textarea">' + (emp.welcome_message || '') + '</textarea>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="layui-form-item layui-form-text">' +
+                        '<label class="layui-form-label">提示词</label>' +
+                        '<div class="layui-input-block">' +
+                            '<textarea name="system_prompt" class="layui-textarea" style="height:100px;">' + (emp.system_prompt || '') + '</textarea>' +
+                        '</div>' +
+                    '</div>' +
+                    getSkillCheckboxHtml(emp.skill_ids) +
+                    '<div class="layui-form-item">' +
+                        '<div class="layui-input-block">' +
+                            '<button class="layui-btn" lay-submit lay-filter="submitEdit">提交</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</form>',
+                success: function(layero, index){
+                    form.render();
+                    form.on('submit(submitEdit)', function(data){
+                        var skillIds = [];
+                        $('input[name="skill_ids"]:checked').each(function(){
+                            skillIds.push($(this).val());
+                        });
+                        var postData = data.field;
+                        postData.skill_ids = skillIds.join(',');
+                        $.post('/admin/digital_employee/edit', postData, function(res){
+                            if(res.code === 0){
+                                layer.msg('更新成功', {icon: 1});
+                                layer.close(index);
+                                tableIns.reload();
+                            } else {
+                                layer.msg(res.msg, {icon: 2});
+                            }
+                        });
+                        return false;
+                    });
+                }
+            });
+        });
+    };
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - XHAgentOS</title>
+    <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            padding: 24px;
+            background: #0a0e17;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #c8d6e5;
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(88, 101, 242, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        .page-wrap { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; }
+        .page-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 28px;
+        }
+        .page-header h1 {
+            font-size: 24px; font-weight: 700;
+            background: linear-gradient(135deg, #00b4ff, #5865f2, #00ffc8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+        .btn-neon {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 20px; border: none; border-radius: 8px;
+            cursor: pointer; font-size: 13px; font-weight: 500;
+            transition: all 0.3s; text-decoration: none;
+            background: linear-gradient(135deg, #00b4ff, #5865f2);
+            color: #fff; box-shadow: 0 4px 20px rgba(0, 180, 255, 0.25);
+        }
+        .btn-neon:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(0, 180, 255, 0.4); }
+        .btn-neon-danger { background: linear-gradient(135deg, #ff4757, #c0392b); box-shadow: 0 4px 20px rgba(255,71,87,0.25); }
+        .btn-neon-sm { padding: 5px 14px; font-size: 12px; }
+        .btn-neon-success { background: linear-gradient(135deg, #2ed573, #0abde3); }
+
+        /* 表格科技风格 */
+        .table-wrap {
+            background: linear-gradient(145deg, rgba(20, 30, 50, 0.9), rgba(10, 14, 23, 0.95));
+            border: 1px solid rgba(0, 180, 255, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 16px; text-align: left; font-size: 13px; }
+        th {
+            background: rgba(0, 180, 255, 0.08);
+            color: #00b4ff;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.15);
+        }
+        td { border-bottom: 1px solid rgba(255,255,255,0.03); color: #c8d6e5; }
+        tr:hover td { background: rgba(0, 180, 255, 0.05); }
+        .url-cell { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .pagination-wrap {
+            display: flex; justify-content: center; gap: 8px; padding: 20px 0;
+        }
+        .page-btn {
+            padding: 8px 16px; border-radius: 8px;
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            background: rgba(20, 30, 50, 0.6);
+            color: #c8d6e5; cursor: pointer; font-size: 13px; transition: all 0.3s;
+        }
+        .page-btn:hover { border-color: rgba(0, 180, 255, 0.5); background: rgba(0, 180, 255, 0.1); }
+        .page-btn.active { border-color: #00b4ff; background: linear-gradient(135deg, rgba(0,180,255,0.2), rgba(88,101,242,0.2)); color: #fff; }
+        .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-info { display: flex; align-items: center; font-size: 13px; color: rgba(200,214,229,0.5); padding: 0 12px; }
+
+        .dialog-form { padding: 20px; }
+        .field { margin-bottom: 14px; }
+        .field label { display: block; font-size: 13px; color: rgba(200,214,229,0.7); margin-bottom: 6px; }
+        .field input, .field textarea {
+            width: 100%; padding: 10px 14px; border-radius: 8px;
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: #c8d6e5; font-size: 13px; outline: none;
+            transition: border-color 0.3s;
+        }
+        .field input:focus, .field textarea:focus { border-color: #00b4ff; }
+        .field textarea { resize: vertical; min-height: 60px; font-family: 'Courier New', monospace; }
+
+        .toast-custom {
+            position: fixed; top: 20px; right: 20px; z-index: 99999;
+            padding: 12px 24px; border-radius: 8px; font-size: 14px;
+            background: rgba(0,0,0,0.85); color: #c8d6e5;
+            backdrop-filter: blur(10px);
+            animation: fadeInOut 2s ease forwards;
+        }
+        .toast-custom.success { border-left: 3px solid #2ed573; }
+        .toast-custom.error { border-left: 3px solid #ff4757; }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+        .badge-status { padding: 2px 10px; border-radius: 12px; font-size: 11px; }
+        .badge-on { background: rgba(46,213,115,0.15); color: #2ed573; border: 1px solid rgba(46,213,115,0.3); }
+        .badge-off { background: rgba(255,71,87,0.12); color: #ff4757; border: 1px solid rgba(255,71,87,0.2); }
+    </style>
+</head>
+<body>
+<div class="page-wrap">
+    <div class="page-header">
+        <h1>🔭 瞭望源管理 <small>Lookout Source</small></h1>
+        <div>
+            <button class="btn-neon" onclick="openCreate()">+ 新增瞭望源</button>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>名称</th>
+                    <th>URL 模板</th>
+                    <th>分页参数</th>
+                    <th>每页条数</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="dataBody"></tbody>
+        </table>
+    </div>
+    <div class="pagination-wrap" id="pagination"></div>
+</div>
+
+<script src="{{ static_url('lib/layui/layui.js') }}"></script>
+<script>
+function getCookie(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+}
+var $ = layui.$;
+layui.$.ajaxSetup({
+    beforeSend: function(xhr) { xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf')); }
+});
+
+var currentPage = 1, totalCount = 0, pageSize = 10;
+
+function showToast(msg, type) {
+    var t = $('<div class="toast-custom '+(type||'')+'">'+msg+'</div>');
+    $('body').append(t);
+    setTimeout(function(){ t.remove(); }, 2500);
+}
+
+function loadData(page) {
+    page = page || 1;
+    $.get('/admin/lookout/sources/api?page='+page+'&limit='+pageSize, function(res){
+        if(res.code !== 0) return;
+        totalCount = res.count;
+        currentPage = page;
+        renderTable(res.data);
+        renderPagination();
+    });
+}
+
+function renderTable(data) {
+    var html = '';
+    if(!data || data.length === 0) {
+        html = '<tr><td colspan="8" style="text-align:center;padding:40px;color:rgba(200,214,229,0.3);">暂无数据</td></tr>';
+        $('#dataBody').html(html);
+        return;
+    }
+    data.forEach(function(s){
+        var statusHtml = s.status ? '<span class="badge-status badge-on">启用</span>' : '<span class="badge-status badge-off">禁用</span>';
+        html += '<tr>';
+        html += '<td>'+s.id+'</td>';
+        html += '<td>'+s.name+'</td>';
+        html += '<td class="url-cell" title="'+s.url_template+'">'+s.url_template+'</td>';
+        html += '<td>'+s.pn_param+'</td>';
+        html += '<td>'+s.page_size+'</td>';
+        html += '<td>'+statusHtml+'</td>';
+        html += '<td>'+s.create_at+'</td>';
+        html += '<td>';
+        html += '<button class="btn-neon btn-neon-sm" onclick="openEdit('+s.id+')">编辑</button> ';
+        html += '<button class="btn-neon btn-neon-sm btn-neon-danger" onclick="openDelete('+s.id+')">删除</button>';
+        html += '</td></tr>';
+    });
+    $('#dataBody').html(html);
+}
+
+function renderPagination() {
+    var totalPages = Math.ceil(totalCount / pageSize);
+    if(totalPages <= 1) { $('#pagination').empty(); return; }
+    var html = '';
+    html += '<button class="page-btn" onclick="loadData(1)" '+(currentPage<=1?'disabled':'')+'>&laquo;</button>';
+    html += '<button class="page-btn" onclick="loadData('+(currentPage-1)+')" '+(currentPage<=1?'disabled':'')+'>&lsaquo;</button>';
+    var start = Math.max(1, currentPage-2), end = Math.min(totalPages, currentPage+2);
+    for(var i=start; i<=end; i++){
+        html += '<button class="page-btn'+(i===currentPage?' active':'')+'" onclick="loadData('+i+')">'+i+'</button>';
+    }
+    html += '<button class="page-btn" onclick="loadData('+(currentPage+1)+')" '+(currentPage>=totalPages?'disabled':'')+'>&rsaquo;</button>';
+    html += '<button class="page-btn" onclick="loadData('+totalPages+')" '+(currentPage>=totalPages?'disabled':'')+'>&raquo;</button>';
+    html += '<span class="page-info">共 '+totalCount+' 条</span>';
+    $('#pagination').html(html);
+}
+
+function openCreate() {
+    layer.open({
+        type: 1, title: '新增瞭望源', area: ['560px', '420px'],
+        content: '<div class="dialog-form">'+
+            '<div class="field"><label>名称</label><input id="f_name" placeholder="如 百度新闻"></div>'+
+            '<div class="field"><label>URL 模板</label><input id="f_url" placeholder="https://...keyword={}"></div>'+
+            '<div class="field"><label>关键词占位符</label><input id="f_ph" value="{}" placeholder="{}"></div>'+
+            '<div class="field" style="display:flex;gap:12px;">'+
+                '<div style="flex:1;"><label>分页参数名</label><input id="f_pn" value="pn"></div>'+
+                '<div style="flex:1;"><label>每页条数</label><input id="f_ps" value="10" type="number"></div>'+
+            '</div>'+
+            '<button class="btn-neon" style="width:100%;justify-content:center;margin-top:8px;" onclick="submitCreate()">创建</button>'+
+            '</div>',
+        shadeClose: true
+    });
+}
+function submitCreate() {
+    var name = $('#f_name').val().trim();
+    var url = $('#f_url').val().trim();
+    if(!name || !url) { showToast('请填写完整信息', 'error'); return; }
+    $.post('/admin/lookout/sources/add', {
+        name: name, url_template: url,
+        pn_param: $('#f_pn').val() || 'pn',
+        page_size: parseInt($('#f_ps').val()) || 10,
+        keyword_placeholder: $('#f_ph').val() || '{}'
+    }, function(res){
+        showToast(res.msg, res.code===0?'success':'error');
+        if(res.code===0){ layer.closeAll(); loadData(1); }
+    });
+}
+
+function openEdit(id) {
+    $.get('/admin/lookout/sources/api?limit=100', function(res){
+        var source = null;
+        if(res.data) res.data.forEach(function(s){ if(s.id===id) source=s; });
+        if(!source) return;
+        layer.open({
+            type: 1, title: '编辑瞭望源', area: ['560px', '420px'],
+            content: '<div class="dialog-form">'+
+                '<div class="field"><label>名称</label><input id="e_name" value="'+source.name+'"></div>'+
+                '<div class="field"><label>URL 模板</label><input id="e_url" value="'+source.url_template+'"></div>'+
+                '<div class="field"><label>关键词占位符</label><input id="e_ph" value="'+source.keyword_placeholder+'"></div>'+
+                '<div class="field" style="display:flex;gap:12px;">'+
+                    '<div style="flex:1;"><label>分页参数名</label><input id="e_pn" value="'+source.pn_param+'"></div>'+
+                    '<div style="flex:1;"><label>每页条数</label><input id="e_ps" value="'+source.page_size+'" type="number"></div>'+
+                '</div>'+
+                '<button class="btn-neon" style="width:100%;justify-content:center;margin-top:8px;" onclick="submitEdit('+id+')">保存</button>'+
+                '</div>',
+            shadeClose: true
+        });
+    });
+}
+function submitEdit(id) {
+    $.post('/admin/lookout/sources/edit', {
+        id: id, name: $('#e_name').val().trim(),
+        url_template: $('#e_url').val().trim(),
+        pn_param: $('#e_pn').val() || 'pn',
+        page_size: parseInt($('#e_ps').val()) || 10,
+        keyword_placeholder: $('#e_ph').val() || '{}'
+    }, function(res){
+        showToast(res.msg, res.code===0?'success':'error');
+        if(res.code===0){ layer.closeAll(); loadData(currentPage); }
+    });
+}
+
+function openDelete(id) {
+    if(!confirm('确定删除此瞭望源？')) return;
+    $.post('/admin/lookout/sources/delete', {id:id}, function(res){
+        showToast(res.msg, res.code===0?'success':'error');
+        if(res.code===0) {
+            if(totalCount>0 && Math.ceil((totalCount-1)/pageSize) < currentPage)
+                currentPage = Math.max(1, currentPage-1);
+            loadData(currentPage);
+        }
+    });
+}
+
+loadData(1);
+</script>
+</body>
+</html>

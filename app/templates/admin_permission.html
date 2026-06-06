@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - XHAgentOS</title>
+    <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <style>
+        body { padding: 20px; background: #f5f6fa; }
+        .page-title { font-size: 18px; font-weight: 600; color: #1a1a2e; margin-bottom: 20px; }
+        .page-title .layui-icon { font-size: 20px; margin-right: 6px; color: #5fb878; }
+        .sel-row { margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+        .sel-row label { font-size: 14px; color: #333; font-weight: 500; }
+        .func-tree { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 20px; min-height: 200px; }
+        .tree-item { padding: 6px 0; }
+        .tree-item label { cursor: pointer; }
+        .tree-item .layui-icon { margin-right: 4px; color: #1e9fff; }
+        .tree-children { padding-left: 28px; }
+        .tree-children .tree-item label { font-weight: normal; color: #555; }
+        .tree-children .tree-item .layui-icon { color: #8c8c8c; }
+    </style>
+</head>
+<body>
+<div>
+    <div class="page-title"><i class="layui-icon layui-icon-auz"></i> 权限管理</div>
+
+    <div class="sel-row">
+        <label>选择角色：</label>
+        <div style="width:200px;">
+            <select id="roleSelect" class="layui-input" lay-ignore>
+                <option value="">请选择角色</option>
+            </select>
+        </div>
+        <button class="layui-btn layui-btn-sm layui-btn-normal" id="saveBtn" disabled>
+            <i class="layui-icon layui-icon-ok"></i> 保存权限
+        </button>
+        <span id="saveTip" style="color:#5fb878;font-size:13px;display:none;"></span>
+    </div>
+
+    <div class="func-tree" id="funcTree">
+        <div style="color:#bfbfbf;text-align:center;padding:40px;">请先选择一个角色</div>
+    </div>
+</div>
+
+<script src="{{ static_url('lib/layui/layui.js') }}"></script>
+<script>
+function getCookie(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+}
+layui.$.ajaxSetup({
+    beforeSend: function(xhr) { xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf')); }
+});
+
+layui.use(['layer'], function(){
+    var layer = layui.layer, $ = layui.$;
+
+    // 加载角色列表
+    $.get('/admin/permissions/roles', function(res){
+        if(res.code === 0){
+            var sel = $('#roleSelect');
+            res.data.forEach(function(r){
+                sel.append('<option value="'+r.id+'">'+r.name+'</option>');
+            });
+        }
+    });
+
+    // 角色切换 -> 加载功能树
+    $('#roleSelect').on('change', function(){
+        var roleId = $(this).val();
+        if(!roleId){
+            $('#funcTree').html('<div style="color:#bfbfbf;text-align:center;padding:40px;">请先选择一个角色</div>');
+            $('#saveBtn').prop('disabled', true);
+            return;
+        }
+        $('#saveBtn').prop('disabled', false);
+        $('#saveTip').hide();
+        $.get('/admin/permissions/functions?role_id='+roleId, function(res){
+            if(res.code === 0){
+                renderTree(res.data);
+            }
+        });
+    });
+
+    function renderTree(data){
+        var html = '';
+        data.forEach(function(item){
+            html += '<div class="tree-item">';
+            html += '<label><input type="checkbox" class="parent-check" value="'+item.id+'" '+(item.checked?'checked':'')+'> ';
+            html += '<i class="layui-icon layui-icon-app"></i> '+item.name+'</label>';
+            if(item.children && item.children.length > 0){
+                html += '<div class="tree-children">';
+                item.children.forEach(function(child){
+                    html += '<div class="tree-item"><label><input type="checkbox" class="child-check" data-parent="'+item.id+'" value="'+child.id+'" '+(child.checked?'checked':'')+'> ';
+                    html += '<i class="layui-icon layui-icon-circle"></i> '+child.name+'</label></div>';
+                });
+                html += '</div>';
+            }
+            html += '</div>';
+        });
+        $('#funcTree').html(html);
+
+        // 父级勾选联动子级
+        $('.parent-check').on('change', function(){
+            var checked = $(this).prop('checked');
+            $(this).closest('.tree-item').find('.child-check').prop('checked', checked);
+        });
+        // 子级勾选联动父级
+        $('.child-check').on('change', function(){
+            var parent = $(this).closest('.tree-children');
+            var allChecked = parent.find('.child-check').length === parent.find('.child-check:checked').length;
+            parent.closest('.tree-item').find('.parent-check').prop('checked', allChecked);
+        });
+    }
+
+    // 保存权限
+    $('#saveBtn').on('click', function(){
+        var roleId = $('#roleSelect').val();
+        if(!roleId) return;
+        var ids = [];
+        $('input[type=checkbox]:checked').each(function(){
+            ids.push($(this).val());
+        });
+        $.post('/admin/permissions/save', {role_id: roleId, function_ids: ids.join(',')}, function(res){
+            if(res.code === 0){
+                $('#saveTip').text('保存成功').show().fadeOut(2000);
+            } else {
+                layer.msg(res.msg, {icon:2});
+            }
+        });
+    });
+});
+</script>
+</body>
+</html>
