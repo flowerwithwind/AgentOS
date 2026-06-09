@@ -120,17 +120,17 @@ class TestTeamTasks(unittest.TestCase):
         except sqlite3.OperationalError as e:
             self.fail(f"Session management DB operation failed: {e}")
 
-    def test_05_deep_collect_tasks(self):
-        # 测试组员3的深度采集任务管理
+    def test_05_scheduled_tasks(self):
+        """测试 ScheduledTaskRepository"""
         res = ScheduledTaskRepository.create("TestTask", "1", "Test", 1, "0 0 * * *")
         self.assertTrue(res)
-        
+
         tasks, total = ScheduledTaskRepository.list_page(1, 10)
         self.assertGreaterEqual(total, 1)
-        
+
         task = tasks[0]
         self.assertEqual(task["name"], "TestTask")
-        
+
         ScheduledTaskRepository.toggle_status(task["id"])
         updated_task = ScheduledTaskRepository.get_by_id(task["id"])
         self.assertNotEqual(task["status"], updated_task["status"])

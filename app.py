@@ -5,7 +5,7 @@ import tornado.ioloop
 import tornado.web
 from tornado.httpserver import HTTPServer
 
-from app.controllers.auth import LoginHandler, LogoutHandler
+from app.controllers.auth import LoginHandler, LogoutHandler, RegisterHandler
 from app.controllers.user_chat import ChatHandler, ChatApiHandler, ChatExportHandler
 from app.controllers.admin import (
     DashboardHandler, AdminHomeHandler, DashboardStatsApiHandler,
@@ -72,7 +72,9 @@ def make_app():
 
     return tornado.web.Application([
         (r"/", LoginHandler),
+        # 认证相关
         (r"/auth/login", LoginHandler),
+        (r"/auth/register", RegisterHandler),
         (r"/auth/logout", LogoutHandler),
         # 用户侧智能问数
         (r"/user/chat", ChatHandler),

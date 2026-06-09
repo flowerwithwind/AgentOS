@@ -26,7 +26,12 @@ class DashboardHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         username = _get_username(self)
-        self.render("admin.html", title="管理后台", username=username)
+        settings = SystemSettingsRepository.get_all()
+        theme_color = settings.get("theme_color", "#1a1a2e")
+        site_logo = settings.get("site_logo", "")
+        site_name = settings.get("site_name", "XHAgentOS")
+        self.render("admin.html", title="管理后台", username=username,
+                     theme_color=theme_color, site_logo=site_logo, site_name=site_name)
 
 
 class AdminHomeHandler(BaseHandler):

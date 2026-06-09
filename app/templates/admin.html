@@ -6,9 +6,12 @@
     <title>{{ title }} - XHAgentOS</title>
     <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
     <style>
+        :root {
+            --theme-color: {{ theme_color }};
+        }
         html, body { height: 100%; margin: 0; }
         .layui-layout-admin .layui-header {
-            background: #1a1a2e;
+            background: var(--theme-color, #1a1a2e);
             border-bottom: 1px solid rgba(255,255,255,0.05);
             height: 50px;
             line-height: 50px;
@@ -24,6 +27,10 @@
         .layui-layout-admin .layui-header .header-title span {
             color: #5fb878;
         }
+        .layui-layout-admin .layui-header .header-title .header-logo {
+            max-height: 30px; vertical-align: middle; margin-right: 6px;
+            display: inline-block;
+        }
         .layui-layout-admin .layui-header .header-user {
             float: right;
             color: rgba(255,255,255,0.7);
@@ -31,7 +38,7 @@
             font-size: 14px;
         }
         .layui-layout-admin .layui-side {
-            background: #1a1a2e;
+            background: var(--theme-color, #1a1a2e);
             top: 50px;
         }
         .layui-layout-admin .layui-side .layui-nav-tree {
@@ -81,7 +88,12 @@
 <div class="layui-layout layui-layout-admin">
     <!-- 顶部 -->
     <div class="layui-header">
-        <div class="header-title">XHAgentOS <span>管理后台</span></div>
+        <div class="header-title">
+            {% if site_logo %}
+            <img src="{{ site_logo }}" class="header-logo" alt="logo">
+            {% end %}
+            XHAgentOS <span>管理后台</span>
+        </div>
         <div class="header-user">
             <a href="/user/chat" target="_blank" style="color:#5fb878;font-size:13px;margin-right:16px;">
                 <i class="layui-icon layui-icon-dialogue"></i> 进入智能问数
@@ -118,6 +130,23 @@ layui.$.ajaxSetup({
 
 layui.use(['element', 'layer'], function(){
     var element = layui.element, $ = layui.$;
+
+    // 将主题色存入 localStorage，iframe 页面可读取
+    localStorage.setItem('xha_theme_color', '{{ theme_color }}');
+
+    // 向 iframe 发送主题色
+    function applyThemeToIframe() {
+        var iframe = $('iframe[name="mainFrame"]')[0];
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+                type: 'xha_theme',
+                theme_color: '{{ theme_color }}'
+            }, '*');
+        }
+    }
+    // iframe 加载完成后发送
+    $('iframe[name="mainFrame"]').on('load', applyThemeToIframe);
+    setTimeout(applyThemeToIframe, 1000);
 
     // 动态加载菜单
     $.get('/admin/menus', function(res){

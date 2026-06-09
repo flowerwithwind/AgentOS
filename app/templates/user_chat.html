@@ -248,10 +248,11 @@
     <main class="main">
         <div class="topbar">
             <div style="display: flex; gap: 12px; align-items: center;">
-                <div class="mode-indicator chat" id="modeIndicator">
+                <div class="mode-indicator chat" id="modeIndicator" style="cursor:pointer;" onclick="toggleMode()">
                     <span>💬</span>
                     <span>对话模式</span>
                 </div>
+                <button id="modeToggleBtn" class="layui-btn layui-btn-sm" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:#c8d6e5;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px;" onclick="toggleMode()">切换为问数</button>
                 <select class="model-select" id="modelSelect">
                     <option value="">选择模型</option>
                 </select>
@@ -291,6 +292,7 @@ var currentEmployee = null;
 var employees = [];
 var models = [];
 var currentModelId = null;
+var currentMode = 'chat'; // 'chat' | 'query'
 var sending = false;
 
 function apiGet(url) {
@@ -314,7 +316,7 @@ function showWelcomeBox() {
     var area = document.getElementById('chatArea');
     area.innerHTML = '<div class="welcome-box" id="welcomeBox">' +
         '<h3>欢迎使用 XHAgentOS 智能问数</h3>' +
-        '<p>选择「对话」或「问数」模式，输入 @ 可调用数字员工</p></div>';
+        '<p>点击「切换为问数」按钮进入问数模式，输入 @ 可调用数字员工</p></div>';
 }
 
 function appendMessage(role, content) {
@@ -417,14 +419,22 @@ function loadModels() {
 }
 
 function updateModeIndicator(isQueryMode) {
+    currentMode = isQueryMode ? 'query' : 'chat';
     var indicator = document.getElementById('modeIndicator');
+    var toggleBtn = document.getElementById('modeToggleBtn');
     if (isQueryMode) {
         indicator.className = 'mode-indicator query';
         indicator.innerHTML = '<span>📊</span><span>问数模式</span>';
+        toggleBtn.textContent = '切换为对话';
     } else {
         indicator.className = 'mode-indicator chat';
         indicator.innerHTML = '<span>💬</span><span>对话模式</span>';
+        toggleBtn.textContent = '切换为问数';
     }
+}
+
+function toggleMode() {
+    updateModeIndicator(currentMode === 'chat');
 }
 
 function deleteConv(id) {
@@ -503,9 +513,12 @@ function sendMessage() {
     appendMessage('user', content);
     input.value = '';
 
-    var hasAt = content.indexOf('@') >= 0 || currentEmployee !== null;
-    var mode = hasAt ? 'query' : 'chat';
-    updateModeIndicator(hasAt);
+    // 使用显式模式切换，@ 触发可覆盖为 query 模式
+    var mode = currentMode;
+    if (content.indexOf('@') >= 0 || currentEmployee !== null) {
+        mode = 'query';
+    }
+    updateModeIndicator(mode === 'query');
 
     var typing = document.createElement('div');
     typing.className = 'typing';
