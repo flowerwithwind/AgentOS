@@ -222,3 +222,10 @@ def init_db():
                 UNIQUE(employee_id, skill_id)
             )
         ''')
+        # 系统设置表
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS system_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL DEFAULT ''
+            )
+        ''')

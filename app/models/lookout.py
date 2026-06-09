@@ -690,5 +690,50 @@ class DeepCollectTask:
                 del cls._progress[tid]
 
 
+class ScheduledTaskRepository:
+    """定时任务仓库（测试用）"""
+
+    @staticmethod
+    def create(task_type, task_config, cron_expr, task_name="", status=1):
+        """创建定时任务"""
+        with get_connection() as conn:
+            conn.execute(
+                "INSERT INTO scheduled_tasks (task_type, task_config, cron_expr, task_name, status) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (task_type, task_config, cron_expr, task_name, status)
+            )
+            return conn.last_insert_rowid()
+
+    @staticmethod
+    def list_page(page=1, page_size=20):
+        """分页查询"""
+        with get_connection() as conn:
+            total = conn.execute("SELECT COUNT(*) AS cnt FROM scheduled_tasks").fetchone()["cnt"]
+            rows = conn.execute(
+                "SELECT * FROM scheduled_tasks ORDER BY id DESC LIMIT ? OFFSET ?",
+                (page_size, (page - 1) * page_size)
+            ).fetchall()
+            return rows, total
+
+    @staticmethod
+    def get_by_id(task_id):
+        """根据ID查询"""
+        with get_connection() as conn:
+            return conn.execute(
+                "SELECT * FROM scheduled_tasks WHERE id = ?", (task_id,)
+            ).fetchone()
+
+    @staticmethod
+    def toggle_status(task_id):
+        """切换启用/禁用"""
+        with get_connection() as conn:
+            task = conn.execute("SELECT * FROM scheduled_tasks WHERE id = ?", (task_id,)).fetchone()
+            if not task:
+                return False
+            new_status = 0 if task["status"] == 1 else 1
+            conn.execute("UPDATE scheduled_tasks SET status = ? WHERE id = ?", (new_status, task_id))
+            return True
+
+
 # 延迟导入，避免循环引用
 from app.models.model import ModelRepository

@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import logging
 import tornado.ioloop
 import tornado.web
 from tornado.httpserver import HTTPServer
@@ -45,6 +46,10 @@ from app.controllers.admin import (
     # 会话管理
     SessionListHandler, SessionListApiHandler,
     SessionMessagesApiHandler, SessionDeleteHandler,
+    # 系统设置
+    SystemSettingHandler, SystemSettingApiHandler,
+    SystemSettingLogoUploadHandler, SystemSettingLogApiHandler,
+    SystemSettingLogClearHandler,
 )
 from app.models.db import init_db, get_connection
 from app.models.user import UserRepository
@@ -158,6 +163,12 @@ def make_app():
         (r"/admin/session/api", SessionListApiHandler),
         (r"/admin/session/messages", SessionMessagesApiHandler),
         (r"/admin/session/delete", SessionDeleteHandler),
+        # 系统设置
+        (r"/admin/settings", SystemSettingHandler),
+        (r"/admin/settings/api", SystemSettingApiHandler),
+        (r"/admin/settings/logo", SystemSettingLogoUploadHandler),
+        (r"/admin/settings/logs/api", SystemSettingLogApiHandler),
+        (r"/admin/settings/logs/clear", SystemSettingLogClearHandler),
         # 用户侧接口
         (r"/api/digital_employee/by_name", DigitalEmployeeByNameApiHandler),
     ], **settings)
@@ -218,6 +229,7 @@ def seed_data():
             (13, "数智大屏", "layui-icon-screen",   "/admin/big-screen",  14, 1, 1),
             (15, "对话记录", "layui-icon-dialogue", "/admin/conversations",14, 2, 1),
             (19, "会话管理", "layui-icon-log",      "/admin/session",     14, 3, 1),
+            (21, "系统设置", "layui-icon-set",      "/admin/settings",    2, 6, 1),
         ]
         for fid, fname, ficon, furl, fparent, fsort, fmenu in funcs:
             conn.execute(
@@ -294,6 +306,19 @@ def seed_data():
 if __name__ == "__main__":
     init_db()
     seed_data()
+    # 配置日志
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "app.log")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(log_file, encoding="utf-8"),
+            logging.StreamHandler()
+        ]
+    )
+    logger = logging.getLogger(__name__)
     app = make_app()
     server = HTTPServer(app)
     server.listen(10086)

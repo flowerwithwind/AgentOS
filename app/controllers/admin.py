@@ -11,6 +11,7 @@ from app.models.conversation import ConversationRepository, SessionRepository
 from app.models.api_token import ApiTokenRepository
 from app.models.skill import SkillRepository
 from app.models.digital_employee import DigitalEmployeeRepository
+from app.models.system_settings import SystemSettingsRepository
 
 
 def _get_username(handler):
@@ -1179,3 +1180,145 @@ class SessionDeleteHandler(BaseHandler):
         conversation_id = int(self.get_body_argument("id", "0"))
         ok, msg = SessionRepository.delete(conversation_id)
         self.write({"code": 0 if ok else 1, "msg": msg})
+
+
+# ====== 系统设置 ======
+
+class SystemSettingHandler(BaseHandler):
+    """系统设置页面"""
+    def get(self):
+        settings = SystemSettingsRepository.get_all()
+        # 获取模型列表
+        from app.models.db import get_connection
+        models = []
+        try:
+            conn = get_connection()
+            models = conn.execute("SELECT id, name FROM models ORDER BY id").fetchall()
+            conn.close()
+        except Exception:
+            pass
+        self.render("admin_system_setting.html", title="系统设置",
+                     settings=settings, models=models)
+
+
+class SystemSettingApiHandler(BaseHandler):
+    """系统设置 API"""
+
+    def get(self):
+        settings = SystemSettingsRepository.get_all()
+        result = {}
+        for row in settings:
+            result[row["key"]] = row["value"]
+        self.write({"code": 0, "data": result, "msg": "ok"})
+
+    def post(self):
+        theme_color = self.get_argument("theme_color", "")
+        site_name = self.get_argument("site_name", "")
+        default_model_id = self.get_argument("default_model_id", "")
+        model_timeout = self.get_argument("model_timeout", "")
+        model_max_tokens = self.get_argument("model_max_tokens", "")
+        model_temperature = self.get_argument("model_temperature", "")
+        retain_days = self.get_argument("retain_days", "")
+        max_records_per_collect = self.get_argument("max_records_per_collect", "")
+        collect_interval = self.get_argument("collect_interval", "")
+        auto_cleanup = self.get_argument("auto_cleanup", "")
+        cleanup_conversation_days = self.get_argument("cleanup_conversation_days", "")
+        cleanup_session_days = self.get_argument("cleanup_session_days", "")
+        cleanup_log_days = self.get_argument("cleanup_log_days", "")
+        footer_text = self.get_argument("footer_text", "")
+        settings = {}
+        if theme_color:
+            settings["theme_color"] = theme_color
+        if site_name:
+            settings["site_name"] = site_name
+        if default_model_id:
+            settings["default_model_id"] = default_model_id
+        if model_timeout:
+            settings["model_timeout"] = model_timeout
+        if model_max_tokens:
+            settings["model_max_tokens"] = model_max_tokens
+        if model_temperature:
+            settings["model_temperature"] = model_temperature
+        if retain_days:
+            settings["retain_days"] = retain_days
+        if max_records_per_collect:
+            settings["max_records_per_collect"] = max_records_per_collect
+        if collect_interval:
+            settings["collect_interval"] = collect_interval
+        if auto_cleanup:
+            settings["auto_cleanup"] = auto_cleanup
+        if cleanup_conversation_days:
+            settings["cleanup_conversation_days"] = cleanup_conversation_days
+        if cleanup_session_days:
+            settings["cleanup_session_days"] = cleanup_session_days
+        if cleanup_log_days:
+            settings["cleanup_log_days"] = cleanup_log_days
+        if footer_text:
+            settings["footer_text"] = footer_text
+        SystemSettingsRepository.set_multi(settings)
+        self.write({"code": 0, "msg": "保存成功"})
+
+
+class SystemSettingLogoUploadHandler(BaseHandler):
+    """站点 Logo 上传"""
+    def post(self):
+        import os
+        upload_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "app", "static", "uploads"
+        )
+        os.makedirs(upload_dir, exist_ok=True)
+        file = self.request.files.get("file")
+        if not file:
+            self.write({"code": 1, "msg": "未选择文件"})
+            return
+        f = file[0]
+        import uuid
+        ext = os.path.splitext(f["filename"])[1] or ".png"
+        filename = f"logo_{uuid.uuid4().hex[:8]}{ext}"
+        filepath = os.path.join(upload_dir, filename)
+        with open(filepath, "wb") as wf:
+            wf.write(f["body"])
+        logo_url = f"/static/uploads/{filename}"
+        SystemSettingsRepository.set("site_logo", logo_url)
+        self.write({"code": 0, "data": {"url": logo_url}, "msg": "上传成功"})
+
+
+class SystemSettingLogApiHandler(BaseHandler):
+    """日志查看 API"""
+    def get(self):
+        import os
+        level = self.get_argument("level", "").upper()
+        keyword = self.get_argument("keyword", "")
+        log_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "logs", "app.log"
+        )
+        lines = []
+        if os.path.exists(log_file):
+            with open(log_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if level and f"[{level}]" not in line:
+                        continue
+                    if keyword and keyword not in line:
+                        continue
+                    lines.append(line)
+        lines.reverse()
+        lines = lines[:500]
+        self.write({"code": 0, "data": lines, "msg": "ok"})
+
+
+class SystemSettingLogClearHandler(BaseHandler):
+    """清空日志"""
+    def post(self):
+        import os
+        log_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "logs", "app.log"
+        )
+        if os.path.exists(log_file):
+            open(log_file, "w", encoding="utf-8").close()
+        self.write({"code": 0, "msg": "日志已清空"})
