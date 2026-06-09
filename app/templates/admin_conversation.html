@@ -6,114 +6,72 @@
     <title>{{ title }} - XHAgentOS</title>
     <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            padding: 24px;
-            background: #070b14;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #c8d6e5;
-            min-height: 100vh;
-        }
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background:
-                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(88, 101, 242, 0.04) 0%, transparent 50%);
-            pointer-events: none; z-index: 0;
-        }
-        .page-wrap { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; }
-
+        body { padding: 15px; background: #f5f6fa; }
         .page-title {
-            font-size: 12px; color: rgba(200,214,229,0.3); margin-bottom: 4px;
-        }
-        .page-title h2 {
-            font-size: 16px; font-weight: 600; color: rgba(200,214,229,0.8);
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a2e;
             margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e8e8e8;
         }
-
-        /* 筛选栏 */
-        .filter-bar {
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-            padding: 12px 16px; margin-bottom: 16px;
-            background: rgba(20, 30, 50, 0.5);
-            border: 1px solid rgba(0, 180, 255, 0.1);
-            border-radius: 8px;
+        .page-title .layui-icon {
+            font-size: 20px;
+            margin-right: 6px;
+            color: #1e9fff;
         }
-        .filter-bar input {
-            padding: 6px 12px; border-radius: 6px; background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(0, 180, 255, 0.15);
-            color: #c8d6e5; font-size: 13px; outline: none; width: 140px;
-        }
-        .filter-bar input:focus { border-color: #00b4ff; }
-        .filter-bar label { font-size: 12px; color: rgba(200,214,229,0.5); }
-        .btn-sm {
-            padding: 6px 18px; border: none; border-radius: 4px;
-            font-size: 12px; cursor: pointer; transition: all 0.2s;
-        }
-        .btn-search {
-            background: linear-gradient(135deg, #00b4ff, #5865f2);
-            color: #fff;
-        }
-        .btn-search:hover { opacity: 0.9; }
-        .btn-export {
-            background: rgba(0, 255, 200, 0.1);
-            border: 1px solid rgba(0, 255, 200, 0.3);
-            color: #00ffc8; margin-left: auto;
-        }
-        .btn-export:hover { background: rgba(0, 255, 200, 0.15); }
-
-        /* 表格暗黑 */
-        .layui-table { background: rgba(20,30,50,0.6) !important; }
-        .layui-table thead tr { background: rgba(0,180,255,0.08) !important; }
-        .layui-table th { color: #00b4ff !important; }
-        .layui-table td { color: rgba(200,214,229,0.7) !important; }
-        .layui-table tbody tr:hover { background: rgba(0,180,255,0.05) !important; }
-        .layui-table-page { background: transparent !important; }
-        .layui-laypage a { color: rgba(200,214,229,0.6) !important; }
-        .layui-laypage .layui-laypage-curr .layui-laypage-em { background: #00b4ff !important; }
-
         .cell-limit {
-            max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
             display: inline-block;
-        }
-
-        .toast-custom {
-            position: fixed; top: 20px; right: 20px; z-index: 99999;
-            padding: 10px 20px; border-radius: 8px; font-size: 13px;
-            background: rgba(0,0,0,0.85); color: #c8d6e5;
-            animation: fadeInOut 2s ease forwards;
-        }
-        .toast-custom.success { border-left: 3px solid #2ed573; }
-        .toast-custom.error { border-left: 3px solid #ff4757; }
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateY(-10px); }
-            10% { opacity: 1; transform: translateY(0); }
-            80% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-10px); }
         }
     </style>
 </head>
 <body>
-<div class="page-wrap">
+<div>
     <div class="page-title">
-        <h2>对话记录管理</h2>
+        <i class="layui-icon layui-icon-dialogue"></i> 对话记录管理
     </div>
 
-    <div class="filter-bar">
-        <label>用户名</label>
-        <input type="text" id="filterUser" placeholder="输入用户名...">
-        <label>关键词</label>
-        <input type="text" id="filterKeyword" placeholder="搜索提问/回复...">
-        <label>开始日期</label>
-        <input type="date" id="filterDateFrom">
-        <label>结束日期</label>
-        <input type="date" id="filterDateTo">
-        <button class="btn-sm btn-search" onclick="doSearch()">搜索</button>
-        <button class="btn-sm btn-search" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:rgba(200,214,229,0.6);" onclick="resetFilter()">重置</button>
-        <button class="btn-sm btn-export" onclick="doExport()">导出 CSV</button>
-    </div>
+    <form class="layui-form" style="margin-bottom: 12px;">
+        <div class="layui-inline">
+            <label class="layui-form-label" style="width:auto;">用户名</label>
+            <div class="layui-input-inline" style="width: 140px;">
+                <input type="text" id="filterUser" placeholder="输入用户名..." class="layui-input">
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label" style="width:auto;">关键词</label>
+            <div class="layui-input-inline" style="width: 140px;">
+                <input type="text" id="filterKeyword" placeholder="搜索提问/回复..." class="layui-input">
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label" style="width:auto;">开始日期</label>
+            <div class="layui-input-inline" style="width: 140px;">
+                <input type="date" id="filterDateFrom" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label" style="width:auto;">结束日期</label>
+            <div class="layui-input-inline" style="width: 140px;">
+                <input type="date" id="filterDateTo" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-inline">
+            <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" onclick="doSearch()">
+                <i class="layui-icon layui-icon-search"></i> 搜索
+            </button>
+            <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" onclick="resetFilter()">
+                重置
+            </button>
+            <button type="button" class="layui-btn layui-btn-sm" onclick="doExport()">
+                <i class="layui-icon layui-icon-export"></i> 导出 CSV
+            </button>
+        </div>
+    </form>
 
     <table id="convTable" lay-filter="convTable"></table>
 </div>
@@ -204,20 +162,20 @@ function showDetail(id) {
         if(res.code === 0) {
             var item = res.data.find(function(d){return d.id == id;});
             if(item) {
-                var html = '<div style="padding:10px;">'+
-                    '<p><strong>用户名：</strong>'+escapeHtml(item.username)+'</p>'+
-                    '<p><strong>模型：</strong>'+escapeHtml(item.model_name||'未知')+'</p>'+
-                    '<p><strong>时间：</strong>'+item.created_at+'</p>'+
-                    '<hr style="border-color:rgba(255,255,255,0.1)">'+
-                    '<p><strong>提问：</strong></p>'+
-                    '<div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:6px;margin:6px 0;max-height:150px;overflow:auto;white-space:pre-wrap;">'+escapeHtml(item.question)+'</div>'+
-                    '<p><strong>回复：</strong></p>'+
-                    '<div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:6px;margin:6px 0;max-height:250px;overflow:auto;white-space:pre-wrap;">'+escapeHtml(item.answer)+'</div>'+
-                    '</div>';
+                var html = '<div style="padding:10px;">'
+                    + '<p><strong>用户名：</strong>'+escapeHtml(item.username)+'</p>'
+                    + '<p><strong>模型：</strong>'+escapeHtml(item.model_name||'未知')+'</p>'
+                    + '<p><strong>时间：</strong>'+item.created_at+'</p>'
+                    + '<hr>'
+                    + '<p><strong>提问：</strong></p>'
+                    + '<div style="background:#f8f8f8;padding:10px;border-radius:6px;margin:6px 0;max-height:150px;overflow:auto;white-space:pre-wrap;">'+escapeHtml(item.question)+'</div>'
+                    + '<p><strong>回复：</strong></p>'
+                    + '<div style="background:#f8f8f8;padding:10px;border-radius:6px;margin:6px 0;max-height:250px;overflow:auto;white-space:pre-wrap;">'+escapeHtml(item.answer)+'</div>'
+                    + '</div>';
                 window.layer.open({
                     type: 1,
                     title: '对话详情 #'+id,
-                    content: '<div style="padding:10px;color:#c8d6e5;">'+html+'</div>',
+                    content: html,
                     area: ['600px', '500px']
                 });
             }
@@ -228,12 +186,6 @@ function showDetail(id) {
 function doExport() {
     var params = $.param(getFilterParams());
     window.open('/admin/conversations/export?' + params);
-}
-
-function showToast(msg, type) {
-    var t = $('<div class="toast-custom '+(type||'')+'">'+msg+'</div>');
-    $('body').append(t);
-    setTimeout(function(){ t.remove(); }, 2500);
 }
 </script>
 </body>

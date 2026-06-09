@@ -6,310 +6,188 @@
     <title>{{ title }} - XHAgentOS</title>
     <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
     <style>
-        /* ===== 全局科技感风格 ===== */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            padding: 24px;
-            background: #0a0e17;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            color: #c8d6e5;
-            min-height: 100vh;
+        body { padding: 15px; background: #f5f6fa; }
+        .page-title {
+            font-size: 18px; font-weight: 600; color: #1a1a2e;
+            margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #e8e8e8;
         }
-        /* 动态背景粒子 */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background:
-                radial-gradient(ellipse at 20% 50%, rgba(0, 180, 255, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(88, 101, 242, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(0, 255, 200, 0.03) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
-        }
+        .page-title .layui-icon { font-size: 20px; margin-right: 6px; color: #1e9fff; }
 
-        .page-wrap { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; }
+        .toolbar { margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .batch-area { display: none; gap: 8px; align-items: center; }
+        .batch-area.show { display: flex; }
 
-        /* 页面标题 */
-        .page-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 28px;
-        }
-        .page-header h1 {
-            font-size: 24px; font-weight: 700;
-            background: linear-gradient(135deg, #00b4ff, #5865f2, #00ffc8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 2px;
-        }
-        .page-header h1 small {
-            font-size: 14px; font-weight: 400;
-            -webkit-text-fill-color: rgba(200,214,229,0.5);
-            margin-left: 12px;
-            letter-spacing: 0;
-        }
-        .header-actions { display: flex; gap: 10px; align-items: center; }
-        .header-actions .batch-area { display: none; gap: 8px; align-items: center; }
-        .header-actions .batch-area.show { display: flex; }
-
-        /* 科技感按钮 */
-        .btn-neon {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 20px; border: none; border-radius: 8px;
-            cursor: pointer; font-size: 13px; font-weight: 500;
-            transition: all 0.3s; text-decoration: none;
-            background: linear-gradient(135deg, #00b4ff, #5865f2);
-            color: #fff; box-shadow: 0 4px 20px rgba(0, 180, 255, 0.25);
-        }
-        .btn-neon:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(0, 180, 255, 0.4); }
-        .btn-neon-danger { background: linear-gradient(135deg, #ff4757, #c0392b); box-shadow: 0 4px 20px rgba(255,71,87,0.25); }
-        .btn-neon-danger:hover { box-shadow: 0 6px 30px rgba(255,71,87,0.4); }
-        .btn-neon-success { background: linear-gradient(135deg, #2ed573, #0abde3); box-shadow: 0 4px 20px rgba(46,213,115,0.25); }
-        .btn-neon-sm { padding: 5px 14px; font-size: 12px; }
-
-        /* ===== 卡片网格 ===== */
+        /* 卡片网格 */
         .card-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 24px;
+            gap: 16px;
+            margin-bottom: 16px;
         }
         @media (max-width: 1100px) { .card-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 700px) { .card-grid { grid-template-columns: 1fr; } }
 
-        /* 单张卡片 - 玻璃态 + 科技光效 */
         .model-card {
-            background: linear-gradient(145deg, rgba(20, 30, 50, 0.9), rgba(10, 14, 23, 0.95));
-            border: 1px solid rgba(0, 180, 255, 0.15);
-            border-radius: 16px;
-            padding: 24px;
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+            padding: 16px;
             position: relative;
-            overflow: hidden;
-            transition: all 0.4s;
-            backdrop-filter: blur(10px);
-        }
-        .model-card::before {
-            content: '';
-            position: absolute;
-            top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: conic-gradient(from 0deg, transparent, rgba(0,180,255,0.03), transparent, rgba(88,101,242,0.03), transparent);
-            animation: rotateGlow 8s linear infinite;
-            pointer-events: none;
-        }
-        @keyframes rotateGlow {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            transition: all 0.3s;
         }
         .model-card:hover {
-            border-color: rgba(0, 180, 255, 0.4);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0, 180, 255, 0.15);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            border-color: #d2d2d2;
         }
-        .model-card.disabled {
-            opacity: 0.5;
-            border-color: rgba(255,71,87,0.2);
-        }
-        .model-card.disabled::before { display: none; }
+        .model-card.disabled { opacity: 0.6; border-color: #ffb4b4; }
 
-        .card-content { position: relative; z-index: 1; }
-
-        /* 卡片顶部：状态标记 */
         .card-top {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         .card-badge {
             display: inline-flex; align-items: center; gap: 4px;
-            padding: 3px 12px; border-radius: 20px;
-            font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+            padding: 2px 8px; border-radius: 2px;
+            font-size: 12px; font-weight: 500;
         }
-        .badge-default {
-            background: rgba(0, 255, 200, 0.15);
-            color: #2ed573;
-            border: 1px solid rgba(46, 213, 115, 0.3);
-        }
-        .badge-enabled {
-            background: rgba(0, 180, 255, 0.12);
-            color: #00b4ff;
-            border: 1px solid rgba(0, 180, 255, 0.2);
-        }
-        .badge-disabled {
-            background: rgba(255, 71, 87, 0.12);
-            color: #ff4757;
-            border: 1px solid rgba(255, 71, 87, 0.2);
-        }
-        .card-checkbox {
-            width: 18px; height: 18px; cursor: pointer;
-            accent-color: #00b4ff;
-        }
+        .badge-default { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .badge-enabled { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .badge-disabled { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
 
-        /* 卡片标题 */
         .card-name {
-            font-size: 18px; font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 4px;
-            display: flex; align-items: center; gap: 8px;
+            font-size: 16px; font-weight: 600; color: #333;
+            margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
         }
         .card-name .provider-tag {
             font-size: 11px; font-weight: 400;
-            padding: 2px 8px; border-radius: 4px;
-            background: rgba(88, 101, 242, 0.2);
-            color: #8b9dc3;
-            border: 1px solid rgba(88, 101, 242, 0.2);
+            padding: 1px 6px; border-radius: 2px;
+            background: #f0f0f0; color: #666; border: 1px solid #e0e0e0;
         }
         .card-model-name {
-            font-size: 12px; color: rgba(200, 214, 229, 0.5);
-            margin-bottom: 16px;
+            font-size: 12px; color: #999;
+            margin-bottom: 12px;
             font-family: 'Courier New', monospace;
         }
 
-        /* 信息行 */
         .card-info {
             display: flex; flex-direction: column; gap: 6px;
-            margin-bottom: 18px; padding: 12px; border-radius: 8px;
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid rgba(255,255,255,0.03);
+            margin-bottom: 12px; padding: 10px; border-radius: 2px;
+            background: #fafafa;
+            border: 1px solid #f0f0f0;
         }
         .info-row {
             display: flex; justify-content: space-between; align-items: center;
             font-size: 12px;
         }
-        .info-row .label { color: rgba(200, 214, 229, 0.5); }
-        .info-row .value { color: #c8d6e5; font-family: 'Courier New', monospace; }
-        .info-row .value.url-text { font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .info-row .label { color: #999; }
+        .info-row .value { color: #555; font-family: 'Courier New', monospace; }
+        .info-row .value.url-text { font-size: 11px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* Token 统计 - 可视化进度条 */
         .token-stats {
-            margin-bottom: 18px; padding: 12px; border-radius: 8px;
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid rgba(255,255,255,0.03);
+            margin-bottom: 12px; padding: 10px; border-radius: 2px;
+            background: #fafafa;
+            border: 1px solid #f0f0f0;
         }
         .token-stats .stat-header {
             display: flex; justify-content: space-between; font-size: 12px;
-            margin-bottom: 6px;
+            margin-bottom: 6px; color: #666;
         }
         .token-bar {
             height: 6px; border-radius: 3px;
-            background: rgba(255,255,255,0.08);
+            background: #e8e8e8;
             overflow: hidden;
-            position: relative;
         }
         .token-bar .fill {
             height: 100%; border-radius: 3px;
-            background: linear-gradient(90deg, #00b4ff, #5865f2, #00ffc8);
-            background-size: 200% 100%;
-            animation: barShimmer 3s ease-in-out infinite;
+            background: #1e9fff;
             transition: width 0.6s;
         }
-        @keyframes barShimmer {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-        }
 
-        /* 卡片操作按钮 */
-        .card-actions {
-            display: flex; gap: 8px; flex-wrap: wrap;
-        }
-        .card-actions .btn-neon-sm {
-            flex: 1; justify-content: center;
-            min-width: 60px;
-        }
+        .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .card-actions .layui-btn-sm { flex: 1; justify-content: center; min-width: 56px; }
 
-        /* ===== 分页 ===== */
+        /* 分页 */
         .pagination-wrap {
-            display: flex; justify-content: center; gap: 8px;
-            padding: 20px 0;
+            display: flex; justify-content: center; gap: 4px;
+            padding: 12px 0;
         }
         .pagination-wrap .page-btn {
-            padding: 8px 16px; border-radius: 8px;
-            border: 1px solid rgba(0, 180, 255, 0.2);
-            background: rgba(20, 30, 50, 0.6);
-            color: #c8d6e5; cursor: pointer;
-            font-size: 13px; transition: all 0.3s;
+            padding: 6px 12px; border-radius: 2px;
+            border: 1px solid #e2e2e2;
+            background: #fff;
+            color: #555; cursor: pointer;
+            font-size: 13px; transition: all 0.2s;
         }
         .pagination-wrap .page-btn:hover {
-            border-color: rgba(0, 180, 255, 0.5);
-            background: rgba(0, 180, 255, 0.1);
+            border-color: #1e9fff;
+            color: #1e9fff;
         }
         .pagination-wrap .page-btn.active {
-            border-color: #00b4ff;
-            background: linear-gradient(135deg, rgba(0,180,255,0.2), rgba(88,101,242,0.2));
+            border-color: #1e9fff;
+            background: #1e9fff;
             color: #fff;
         }
         .pagination-wrap .page-btn:disabled {
-            opacity: 0.3; cursor: not-allowed;
+            opacity: 0.4; cursor: not-allowed; color: #bbb; border-color: #e2e2e2;
         }
         .pagination-wrap .page-info {
             display: flex; align-items: center;
-            font-size: 13px; color: rgba(200,214,229,0.5);
-            padding: 0 12px;
+            font-size: 13px; color: #999;
+            padding: 0 8px;
         }
 
-        /* ===== 弹窗覆盖 LayUI 样式 ===== */
-        .layui-layer {
-            border-radius: 12px !important;
-            overflow: hidden;
-        }
-        .layui-layer-title {
-            background: #0a0e17 !important;
-            color: #c8d6e5 !important;
-            border-bottom: 1px solid rgba(0,180,255,0.1) !important;
-        }
-        .layui-layer-content {
-            background: #0a0e17 !important;
-            color: #c8d6e5 !important;
-        }
+        /* 弹窗表单 */
         .dialog-form { padding: 20px; }
-        .dialog-form .field { margin-bottom: 16px; }
+        .dialog-form .field { margin-bottom: 15px; }
         .dialog-form .field label {
-            display: block; font-size: 13px; color: rgba(200,214,229,0.7);
+            display: block; font-size: 13px; color: #666;
             margin-bottom: 6px; font-weight: 500;
         }
         .dialog-form .field input, .dialog-form .field select {
-            width: 100%; padding: 10px 14px; border-radius: 8px;
-            border: 1px solid rgba(0,180,255,0.2);
-            background: rgba(20, 30, 50, 0.8);
-            color: #c8d6e5; font-size: 14px; outline: none;
+            width: 100%; padding: 8px 10px; border-radius: 2px;
+            border: 1px solid #e6e6e6;
+            background: #fff;
+            color: #333; font-size: 14px; outline: none;
             transition: border-color 0.3s;
         }
         .dialog-form .field input:focus, .dialog-form .field select:focus {
-            border-color: #00b4ff; box-shadow: 0 0 20px rgba(0,180,255,0.1);
+            border-color: #1e9fff;
         }
-        .dialog-form .field input::placeholder { color: rgba(200,214,229,0.3); }
+        .dialog-form .field input::placeholder { color: #ccc; }
 
         /* 对话测试弹窗 */
         .chat-box {
-            padding: 20px; height: 400px; display: flex; flex-direction: column;
+            padding: 16px; height: 400px; display: flex; flex-direction: column;
+            background: #fff;
         }
         .chat-messages {
-            flex: 1; overflow-y: auto; margin-bottom: 16px;
-            display: flex; flex-direction: column; gap: 12px;
-            padding-right: 8px;
+            flex: 1; overflow-y: auto; margin-bottom: 12px;
+            display: flex; flex-direction: column; gap: 10px;
+            padding-right: 4px;
         }
         .chat-messages::-webkit-scrollbar { width: 4px; }
-        .chat-messages::-webkit-scrollbar-thumb { background: rgba(0,180,255,0.3); border-radius: 2px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
         .chat-msg {
-            padding: 12px 16px; border-radius: 12px;
+            padding: 10px 14px; border-radius: 4px;
             max-width: 85%; line-height: 1.6;
             font-size: 14px; word-break: break-word;
         }
         .chat-msg.user {
-            background: linear-gradient(135deg, rgba(0,180,255,0.2), rgba(88,101,242,0.2));
-            border: 1px solid rgba(0,180,255,0.15);
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
             align-self: flex-end;
-            color: #e8f4ff;
+            color: #1565c0;
         }
         .chat-msg.ai {
-            background: rgba(20, 30, 50, 0.8);
-            border: 1px solid rgba(255,255,255,0.05);
+            background: #f5f5f5;
+            border: 1px solid #e8e8e8;
             align-self: flex-start;
-            color: #c8d6e5;
+            color: #555;
         }
         .chat-msg.ai .loading-dots { display: inline-flex; gap: 4px; }
         .chat-msg.ai .loading-dots span {
             width: 6px; height: 6px; border-radius: 50%;
-            background: #00b4ff; animation: dotPulse 1.4s infinite;
+            background: #1e9fff; animation: dotPulse 1.4s infinite;
         }
         .chat-msg.ai .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
         .chat-msg.ai .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
@@ -317,58 +195,37 @@
             0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
             40% { opacity: 1; transform: scale(1); }
         }
-        .chat-input-row {
-            display: flex; gap: 10px;
-        }
+        .chat-input-row { display: flex; gap: 8px; }
         .chat-input-row input {
-            flex: 1; padding: 10px 14px; border-radius: 8px;
-            border: 1px solid rgba(0,180,255,0.2);
-            background: rgba(20, 30, 50, 0.8);
-            color: #c8d6e5; font-size: 14px; outline: none;
+            flex: 1; padding: 8px 10px; border-radius: 2px;
+            border: 1px solid #e6e6e6;
+            background: #fff;
+            color: #333; font-size: 14px; outline: none;
         }
-        .chat-input-row input:focus {
-            border-color: #00b4ff;
-        }
+        .chat-input-row input:focus { border-color: #1e9fff; }
 
         .empty-state {
             text-align: center; padding: 60px 20px;
-            color: rgba(200,214,229,0.3);
-            font-size: 16px;
+            color: #bbb;
+            font-size: 14px;
         }
-        .empty-state .icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
-
-        /* 提示弹窗覆盖 */
-        .toast-custom {
-            position: fixed; top: 20px; right: 20px; z-index: 99999;
-            padding: 12px 24px; border-radius: 8px; font-size: 14px;
-            background: rgba(0,0,0,0.85); color: #c8d6e5;
-            backdrop-filter: blur(10px);
-            animation: fadeInOut 2s ease forwards;
-        }
-        .toast-custom.success { border-left: 3px solid #2ed573; }
-        .toast-custom.error { border-left: 3px solid #ff4757; }
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateY(-10px); }
-            10% { opacity: 1; transform: translateY(0); }
-            80% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-10px); }
-        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
     </style>
 </head>
 <body>
-<div class="page-wrap">
-    <!-- 头部 -->
-    <div class="page-header">
-        <h1>🧠 模型引擎 <small>Model Engine</small></h1>
-        <div class="header-actions">
-            <div class="batch-area" id="batchArea">
-                <span style="font-size:13px;">已选 <strong id="selectedCount">0</strong> 个</span>
-                <button class="btn-neon btn-neon-sm btn-neon-success" onclick="batchAction('enable')">启用</button>
-                <button class="btn-neon btn-neon-sm" onclick="batchAction('disable')">禁用</button>
-                <button class="btn-neon btn-neon-sm btn-neon-danger" onclick="batchAction('delete')">删除</button>
-            </div>
-            <button class="btn-neon" onclick="openCreate()">+ 新增模型</button>
+<div>
+    <div class="page-title"><i class="layui-icon layui-icon-engine"></i> 模型引擎</div>
+
+    <div class="toolbar">
+        <div class="batch-area" id="batchArea">
+            <span style="font-size:13px; color:#666;">已选 <strong id="selectedCount" style="color:#1e9fff;">0</strong> 个</span>
+            <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="batchAction('enable')">启用</button>
+            <button class="layui-btn layui-btn-sm layui-btn-warm" onclick="batchAction('disable')">禁用</button>
+            <button class="layui-btn layui-btn-sm layui-btn-danger" onclick="batchAction('delete')">删除</button>
         </div>
+        <button class="layui-btn layui-btn-sm" onclick="openCreate()">
+            <i class="layui-icon layui-icon-add-1"></i> 新增模型
+        </button>
     </div>
 
     <!-- 卡片网格 -->
@@ -396,9 +253,7 @@ var pageSize = 6;
 var selected = {};
 
 function showToast(msg, type) {
-    var t = $('<div class="toast-custom '+(type||'')+'">'+msg+'</div>');
-    $('body').append(t);
-    setTimeout(function(){ t.remove(); }, 2500);
+    layer.msg(msg, {icon: type==='success'?1:2});
 }
 
 function loadModels(page) {
@@ -417,27 +272,25 @@ function loadModels(page) {
 function renderCards(data) {
     var html = '';
     if(!data || data.length === 0){
-        html = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🔮</div>暂无模型，点击右上角「新增模型」添加</div>';
+        html = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">&#128302;</div>暂无模型，点击右上角「新增模型」添加</div>';
         $('#cardGrid').html(html);
         return;
     }
     data.forEach(function(m){
         var statusBadge, statusClass = '';
         if(m.is_default){
-            statusBadge = '<span class="card-badge badge-default">★ 默认</span>';
+            statusBadge = '<span class="card-badge badge-default">&#9733; 默认</span>';
         } else if(m.status){
-            statusBadge = '<span class="card-badge badge-enabled">● 启用</span>';
+            statusBadge = '<span class="card-badge badge-enabled">&#9679; 启用</span>';
         } else {
-            statusBadge = '<span class="card-badge badge-disabled">○ 禁用</span>';
+            statusBadge = '<span class="card-badge badge-disabled">&#9675; 禁用</span>';
             statusClass = ' disabled';
         }
-        // Token 可视化
         var tokenDisplay = m.total_tokens;
         var tokenPercent = Math.min(100, (m.total_tokens / 100000) * 100);
         var tokenLabel = tokenDisplay >= 1000 ? (tokenDisplay/1000).toFixed(1)+'K' : tokenDisplay;
 
         html += '<div class="model-card'+statusClass+'" data-id="'+m.id+'">';
-        html += '<div class="card-content">';
         html += '<div class="card-top">';
         html += '<div>'+statusBadge+'</div>';
         html += '<input type="checkbox" class="card-checkbox" value="'+m.id+'" onchange="toggleSelect(this)">';
@@ -449,29 +302,27 @@ function renderCards(data) {
         html += '<div class="info-row"><span class="label">API密钥</span><span class="value">'+(m.api_key||'未配置')+'</span></div>';
         html += '<div class="info-row"><span class="label">调用次数</span><span class="value">'+m.total_calls+'</span></div>';
         html += '</div>';
-        // Token 统计
         html += '<div class="token-stats">';
         html += '<div class="stat-header"><span>Token 消耗</span><span>'+tokenLabel+'</span></div>';
         html += '<div class="token-bar"><div class="fill" style="width:'+tokenPercent+'%"></div></div>';
         html += '</div>';
-        // 操作按钮
         html += '<div class="card-actions">';
         if(!m.is_default){
-            html += '<button class="btn-neon btn-neon-sm btn-neon-success" onclick="setDefault('+m.id+')">设为默认</button>';
+            html += '<button class="layui-btn layui-btn-sm layui-btn-normal" onclick="setDefault('+m.id+')">设为默认</button>';
         }
         if(!m.is_default){
             if(m.status){
-                html += '<button class="btn-neon btn-neon-sm" onclick="toggleStatus('+m.id+',0)">禁用</button>';
+                html += '<button class="layui-btn layui-btn-sm layui-btn-warm" onclick="toggleStatus('+m.id+',0)">禁用</button>';
             } else {
-                html += '<button class="btn-neon btn-neon-sm btn-neon-success" onclick="toggleStatus('+m.id+',1)">启用</button>';
+                html += '<button class="layui-btn layui-btn-sm layui-btn-normal" onclick="toggleStatus('+m.id+',1)">启用</button>';
             }
         }
-        html += '<button class="btn-neon btn-neon-sm" onclick="openEdit('+m.id+')">编辑</button>';
-        html += '<button class="btn-neon btn-neon-sm btn-neon-danger" onclick="openDelete('+m.id+')">删除</button>';
-        html += '<button class="btn-neon btn-neon-sm" onclick="openTrend('+m.id+')">趋势</button>';
-        html += '<button class="btn-neon btn-neon-sm" onclick="openChat('+m.id+',\''+m.name+'\')">对话测试</button>';
+        html += '<button class="layui-btn layui-btn-sm" onclick="openEdit('+m.id+')">编辑</button>';
+        html += '<button class="layui-btn layui-btn-sm layui-btn-danger" onclick="openDelete('+m.id+')">删除</button>';
+        html += '<button class="layui-btn layui-btn-sm" onclick="openTrend('+m.id+')">趋势</button>';
+        html += '<button class="layui-btn layui-btn-sm" onclick="openChat('+m.id+',\''+m.name+'\')">对话测试</button>';
         html += '</div>';
-        html += '</div></div>';
+        html += '</div>';
     });
     $('#cardGrid').html(html);
 }
@@ -493,7 +344,6 @@ function renderPagination() {
     $('#pagination').html(html);
 }
 
-// 选择逻辑
 function toggleSelect(el) {
     var id = parseInt(el.value);
     if(el.checked) selected[id] = true;
@@ -508,19 +358,19 @@ function updateBatchArea() {
 }
 function getSelectedIds() { return Object.keys(selected).join(','); }
 
-// 批量操作
 function batchAction(action) {
     var ids = getSelectedIds();
     if(!ids) { showToast('请先选择模型', 'error'); return; }
     var msgMap = {delete:'确定批量删除所选模型？', enable:'确定批量启用所选模型？', disable:'确定批量禁用所选模型？'};
-    if(!confirm(msgMap[action] || '确定执行？')) return;
-    $.post('/admin/models/batch', {action:action, ids:ids}, function(res){
-        showToast(res.msg, res.code===0?'success':'error');
-        if(res.code===0) loadModels(currentPage);
+    layer.confirm(msgMap[action] || '确定执行？', {icon: 3, title: '提示'}, function(index){
+        $.post('/admin/models/batch', {action:action, ids:ids}, function(res){
+            showToast(res.msg, res.code===0?'success':'error');
+            if(res.code===0) loadModels(currentPage);
+        });
+        layer.close(index);
     });
 }
 
-// 新增
 function openCreate() {
     layer.open({
         type: 1, title: '新增模型', area: ['500px', '480px'],
@@ -530,7 +380,7 @@ function openCreate() {
             '<div class="field"><label>API 密钥</label><input id="f_api_key" placeholder="sk-..." type="password"></div>'+
             '<div class="field"><label>接口地址</label><input id="f_base_url" value="https://api.deepseek.com/v1" placeholder="https://api.deepseek.com/v1"></div>'+
             '<div class="field"><label>模型名</label><input id="f_model_name" placeholder="如 deepseek-v4-flash"></div>'+
-            '<button class="btn-neon" style="width:100%;justify-content:center;margin-top:8px;" onclick="submitCreate()">创建</button>'+
+            '<button class="layui-btn layui-btn-fluid" style="margin-top:8px;" onclick="submitCreate()">创建</button>'+
             '</div>',
         shadeClose: true
     });
@@ -552,7 +402,6 @@ function submitCreate() {
     });
 }
 
-// 编辑
 function openEdit(id) {
     $.get('/admin/models/api?limit=100', function(res){
         var model = null;
@@ -566,7 +415,7 @@ function openEdit(id) {
                 '<div class="field"><label>API 密钥</label><input id="e_api_key" value="'+model.api_key+'" type="password"></div>'+
                 '<div class="field"><label>接口地址</label><input id="e_base_url" value="'+model.base_url+'"></div>'+
                 '<div class="field"><label>模型名</label><input id="e_model_name" value="'+model.model_name+'"></div>'+
-                '<button class="btn-neon" style="width:100%;justify-content:center;margin-top:8px;" onclick="submitEdit('+id+')">保存</button>'+
+                '<button class="layui-btn layui-btn-fluid" style="margin-top:8px;" onclick="submitEdit('+id+')">保存</button>'+
                 '</div>',
             shadeClose: true
         });
@@ -586,34 +435,33 @@ function submitEdit(id) {
     });
 }
 
-// 删除
 function openDelete(id) {
-    if(!confirm('确定删除此模型？')) return;
-    $.ajax({
-        type: 'POST',
-        url: '/admin/models/delete',
-        data: {id: id},
-        dataType: 'json',
-        beforeSend: function(xhr) {
-            xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf'));
-        },
-        success: function(res) {
-            showToast(res.msg, res.code===0?'success':'error');
-            if(res.code===0) {
-                // 如果当前页没有数据了，跳到上一页
-                if(totalCount > 0 && Math.ceil((totalCount-1) / pageSize) < currentPage) {
-                    currentPage = Math.max(1, currentPage - 1);
+    layer.confirm('确定删除此模型？', {icon: 3, title: '提示'}, function(index){
+        $.ajax({
+            type: 'POST',
+            url: '/admin/models/delete',
+            data: {id: id},
+            dataType: 'json',
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf'));
+            },
+            success: function(res) {
+                showToast(res.msg, res.code===0?'success':'error');
+                if(res.code===0) {
+                    if(totalCount > 0 && Math.ceil((totalCount-1) / pageSize) < currentPage) {
+                        currentPage = Math.max(1, currentPage - 1);
+                    }
+                    loadModels(currentPage);
                 }
-                loadModels(currentPage);
+            },
+            error: function(xhr) {
+                showToast('删除失败 (状态:' + xhr.status + ')', 'error');
             }
-        },
-        error: function(xhr) {
-            showToast('删除失败 (状态:' + xhr.status + ')', 'error');
-        }
+        });
+        layer.close(index);
     });
 }
 
-// 设为默认
 function setDefault(id) {
     $.post('/admin/models/default', {id:id}, function(res){
         showToast(res.msg, res.code===0?'success':'error');
@@ -621,7 +469,6 @@ function setDefault(id) {
     });
 }
 
-// 启用/禁用
 function toggleStatus(id, status) {
     $.post('/admin/models/batch', {action: status?'enable':'disable', ids:id+''}, function(res){
         showToast(res.msg, res.code===0?'success':'error');
@@ -629,14 +476,12 @@ function toggleStatus(id, status) {
     });
 }
 
-// 对话测试
 var chatModelId = 0;
 
-// 趋势图
 function openTrend(modelId) {
     layer.open({
-        type: 1, title: '📈 Token 消耗趋势（近30天）', area: ['700px', '480px'],
-        content: '<div style="padding:20px;text-align:center;"><canvas id="trendCanvas" width="640" height="360"></canvas><p style="color:rgba(200,214,229,0.5);font-size:12px;margin-top:8px;">暂无数据</p></div>',
+        type: 1, title: 'Token 消耗趋势（近30天）', area: ['700px', '480px'],
+        content: '<div style="padding:16px;text-align:center;background:#fff;"><canvas id="trendCanvas" width="640" height="360"></canvas><p style="color:#999;font-size:12px;margin-top:8px;">暂无数据</p></div>',
         shadeClose: true,
         success: function() {
             $.get('/admin/models/trend?id='+modelId, function(res){
@@ -663,8 +508,7 @@ function drawTrendChart(data) {
 
     ctx.clearRect(0, 0, W, H);
 
-    // 网格
-    ctx.strokeStyle = 'rgba(0,180,255,0.08)';
+    ctx.strokeStyle = '#eee';
     ctx.lineWidth = 1;
     for(var i=0;i<=5;i++) {
         var y = pad.top + chartH * (1 - i/5);
@@ -672,28 +516,25 @@ function drawTrendChart(data) {
         ctx.moveTo(pad.left, y);
         ctx.lineTo(W - pad.right, y);
         ctx.stroke();
-        // 刻度标签
-        ctx.fillStyle = 'rgba(200,214,229,0.4)';
+        ctx.fillStyle = '#666';
         ctx.font = '11px sans-serif';
         ctx.textAlign = 'right';
         ctx.fillText(Math.round(maxVal * i / 5), pad.left-8, y+4);
     }
 
-    // X轴标签（每隔几天显示一个，避免拥挤）
     var step = Math.max(1, Math.floor(dates.length / 10));
     ctx.textAlign = 'center';
     for(var i=0;i<dates.length;i++) {
         if(i % step === 0 || i === dates.length-1) {
             var x = pad.left + chartW * i / (dates.length-1 || 1);
-            ctx.fillStyle = 'rgba(200,214,229,0.4)';
+            ctx.fillStyle = '#666';
             ctx.font = '11px sans-serif';
             ctx.fillText(dates[i], x, H - pad.bottom + 20);
         }
     }
 
-    // 折线
     ctx.beginPath();
-    ctx.strokeStyle = '#00b4ff';
+    ctx.strokeStyle = '#1e9fff';
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     for(var i=0;i<tokens.length;i++) {
@@ -704,37 +545,33 @@ function drawTrendChart(data) {
     }
     ctx.stroke();
 
-    // 渐变填充区域
     var lastX = pad.left + chartW * (tokens.length-1) / (tokens.length-1 || 1);
     ctx.lineTo(lastX, pad.top + chartH);
     ctx.lineTo(pad.left, pad.top + chartH);
     ctx.closePath();
     var grad = ctx.createLinearGradient(0, pad.top, 0, pad.top+chartH);
-    grad.addColorStop(0, 'rgba(0,180,255,0.3)');
-    grad.addColorStop(1, 'rgba(0,180,255,0.02)');
+    grad.addColorStop(0, 'rgba(30,159,255,0.2)');
+    grad.addColorStop(1, 'rgba(30,159,255,0.02)');
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // 数据点
     for(var i=0;i<tokens.length;i++) {
         var x = pad.left + chartW * i / (tokens.length-1 || 1);
         var y = pad.top + chartH * (1 - tokens[i] / maxVal);
         ctx.beginPath();
         ctx.arc(x, y, 3, 0, Math.PI*2);
-        ctx.fillStyle = '#00b4ff';
+        ctx.fillStyle = '#1e9fff';
         ctx.fill();
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 1;
         ctx.stroke();
     }
 
-    // 标题
-    ctx.fillStyle = 'rgba(200,214,229,0.6)';
+    ctx.fillStyle = '#666';
     ctx.font = '13px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('Token 消耗量', W/2, 18);
 
-    // 隐藏"暂无数据"文字
     var p = canvas.parentNode.querySelector('p');
     if(p) p.style.display = 'none';
 }
@@ -742,14 +579,14 @@ function drawTrendChart(data) {
 function openChat(id, name) {
     chatModelId = id;
     layer.open({
-        type: 1, title: '💬 对话测试 - '+name, area: ['520px', '480px'],
+        type: 1, title: '对话测试 - '+name, area: ['520px', '480px'],
         content: '<div class="chat-box">'+
             '<div class="chat-messages" id="chatMsgs">'+
-            '<div class="chat-msg ai">你好！请输入消息开始对话测试 ✨</div>'+
+            '<div class="chat-msg ai">你好！请输入消息开始对话测试</div>'+
             '</div>'+
             '<div class="chat-input-row">'+
             '<input id="chatInput" placeholder="输入消息..." onkeydown="if(event.key===\'Enter\')sendChat()">'+
-            '<button class="btn-neon btn-neon-sm" onclick="sendChat()">发送</button>'+
+            '<button class="layui-btn layui-btn-sm" onclick="sendChat()">发送</button>'+
             '</div></div>',
         shadeClose: true
     });
@@ -768,9 +605,9 @@ function sendChat() {
         $('#loadingMsg').remove();
         if(res.code===0){
             box.append('<div class="chat-msg ai">'+escapeHtml(res.reply)+'</div>');
-            loadModels(currentPage); // 刷新 Token 统计
+            loadModels(currentPage);
         } else {
-            box.append('<div class="chat-msg ai" style="color:#ff4757;">请求失败：'+escapeHtml(res.msg)+'</div>');
+            box.append('<div class="chat-msg ai" style="color:#c62828;">请求失败：'+escapeHtml(res.msg)+'</div>');
         }
         box.scrollTop(box[0].scrollHeight);
     });
@@ -780,7 +617,6 @@ function escapeHtml(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
 
-// 初始加载
 loadModels(1);
 </script>
 </body>

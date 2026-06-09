@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - XHAgentOS</title>
     <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ static_url('css/design-tokens.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ static_url('css/admin-dark.css') }}">
     <style>
         :root {
             --theme-color: {{ theme_color }};
@@ -95,7 +97,7 @@
             XHAgentOS <span>管理后台</span>
         </div>
         <div class="header-user">
-            <a href="/user/chat" target="_blank" style="color:#5fb878;font-size:13px;margin-right:16px;">
+            <a href="/user/chat" target="mainFrame" style="color:#5fb878;font-size:13px;margin-right:16px;">
                 <i class="layui-icon layui-icon-dialogue"></i> 进入智能问数
             </a>
             <i class="layui-icon layui-icon-username"></i> {{ username }}
@@ -155,7 +157,7 @@ layui.use(['element', 'layer'], function(){
             res.data.forEach(function(item){
                 var hasChildren = item.children && item.children.length > 0;
                 var url = hasChildren ? 'javascript:;' : (item.url || 'javascript:;');
-                var target = (!hasChildren && url.indexOf('/user/') === 0) ? '_blank' : 'mainFrame';
+                var target = 'mainFrame';
                 var cls = hasChildren ? ' class="layui-nav-item"' : ' class="layui-nav-item"';
                 html += '<li'+cls+'>';
                 html += '<a href="'+url+'" target="'+target+'">';
@@ -167,7 +169,7 @@ layui.use(['element', 'layer'], function(){
                     html += '<dl class="layui-nav-child">';
                     item.children.forEach(function(child){
                         var childUrl = child.url || 'javascript:;';
-                        var childTarget = (childUrl.indexOf('/user/') === 0) ? '_blank' : 'mainFrame';
+                        var childTarget = 'mainFrame';
                         html += '<dd><a href="'+childUrl+'" target="'+childTarget+'">';
                         html += child.icon ? '<i class="layui-icon '+child.icon+'"></i> ' : '';
                         html += child.name+'</a></dd>';

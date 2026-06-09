@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <title>接口管理</title>
     <link rel="stylesheet" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ static_url('css/design-tokens.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ static_url('css/admin-dark.css') }}">
     <style>
         body { background: #f5f6fa; padding: 15px; font-family: -apple-system, sans-serif; }
         .toolbar { margin-bottom: 15px; }
@@ -21,7 +23,7 @@
 <body>
 
 <div class="toolbar">
-    <button class="layui-btn layui-btn-sm" id="btnAdd"><i class="layui-icon layui-icon-add-1"></i> 新增令牌</button>
+    <button class="btn-neon btn-neon-sm" id="btnAdd"><i class="layui-icon layui-icon-add-1"></i> 新增令牌</button>
 </div>
 
 <table class="layui-table" id="tokenTable" lay-filter="tokenTable">

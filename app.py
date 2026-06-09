@@ -50,6 +50,8 @@ from app.controllers.admin import (
     SystemSettingHandler, SystemSettingApiHandler,
     SystemSettingLogoUploadHandler, SystemSettingLogApiHandler,
     SystemSettingLogClearHandler,
+    # 智能问数
+    AdminQAHandler,
 )
 from app.models.db import init_db, get_connection
 from app.models.user import UserRepository
@@ -165,6 +167,8 @@ def make_app():
         (r"/admin/session/api", SessionListApiHandler),
         (r"/admin/session/messages", SessionMessagesApiHandler),
         (r"/admin/session/delete", SessionDeleteHandler),
+        # 智能问数（iframe内嵌）
+        (r"/admin/qa", AdminQAHandler),
         # 系统设置
         (r"/admin/settings", SystemSettingHandler),
         (r"/admin/settings/api", SystemSettingApiHandler),

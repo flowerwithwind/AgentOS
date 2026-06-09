@@ -1,0 +1,81 @@
+/* ========================================
+   XHAgentOS Design Tokens — CSS 变量体系
+   ======================================== */
+
+/* 亮色主题（默认） */
+:root {
+    --bg-primary: #f5f6fa;
+    --bg-secondary: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f8f9fb;
+    --bg-input: #fafafa;
+    --bg-input-hover: #ffffff;
+    --bg-table-stripe: #f8f9fb;
+    --bg-table-hover: #f0f1f5;
+    --border-color: #e8e8e8;
+    --border-color-light: #f0f0f0;
+    --border-radius-sm: 6px;
+    --border-radius: 8px;
+    --border-radius-lg: 12px;
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --text-muted: #999999;
+    --text-heading: #1a1a2e;
+    --text-white: #ffffff;
+    --accent-blue: #1e9fff;
+    --accent-indigo: #5865f2;
+    --accent-cyan: #0abde3;
+    --accent-green: #5fb878;
+    --accent-red: #ff4757;
+    --accent-orange: #ff9f43;
+    --accent-gradient: linear-gradient(135deg, #1e9fff, #5865f2);
+    --accent-gradient-green: linear-gradient(135deg, #5fb878, #0abde3);
+    --accent-gradient-red: linear-gradient(135deg, #ff4757, #c0392b);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.1);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.15);
+    --shadow-glow-blue: 0 4px 20px rgba(30,159,255,0.2);
+    --shadow-glow-red: 0 4px 20px rgba(255,71,87,0.2);
+    --shadow-glow-green: 0 4px 20px rgba(95,184,120,0.2);
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: 'Courier New', Consolas, monospace;
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-base: 14px;
+    --font-size-lg: 16px;
+    --font-size-xl: 20px;
+    --font-size-xxl: 24px;
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+}
+
+/* 暗色覆盖层 */
+.theme-dark {
+    --bg-primary: #0a0e17;
+    --bg-secondary: #111827;
+    --bg-card: #1a1f2e;
+    --bg-card-hover: #222a3d;
+    --bg-input: #1a1f2e;
+    --bg-input-hover: #222a3d;
+    --bg-table-stripe: rgba(255,255,255,0.02);
+    --bg-table-hover: rgba(255,255,255,0.04);
+    --border-color: #2a3040;
+    --border-color-light: #353c50;
+    --text-primary: #c8d6e5;
+    --text-secondary: #8a9bb5;
+    --text-muted: #5a6a85;
+    --text-heading: #e8edf5;
+    --accent-blue: #00b4ff;
+    --accent-gradient: linear-gradient(135deg, #00b4ff, #5865f2);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
+    --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+    --shadow-glow-blue: 0 4px 20px rgba(0,180,255,0.25);
+    --shadow-glow-red: 0 4px 20px rgba(255,71,87,0.25);
+    --shadow-glow-green: 0 4px 20px rgba(46,213,115,0.25);
+}

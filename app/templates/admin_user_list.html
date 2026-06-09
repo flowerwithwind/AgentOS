@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - XHAgentOS</title>
     <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ static_url('css/design-tokens.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ static_url('css/admin-dark.css') }}">
     <style>
         body { padding: 15px; background: #f5f6fa; }
         .page-title {
@@ -32,7 +34,7 @@
     </div>
 
     <div class="toolbar">
-        <button class="layui-btn layui-btn-sm layui-btn-normal" onclick="openAdd()">
+        <button class="btn-neon btn-neon-sm" onclick="openAdd()">
             <i class="layui-icon layui-icon-add-1"></i> 新增用户
         </button>
     </div>

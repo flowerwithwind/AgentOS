@@ -1327,3 +1327,10 @@ class SystemSettingLogClearHandler(BaseHandler):
         if os.path.exists(log_file):
             open(log_file, "w", encoding="utf-8").close()
         self.write({"code": 0, "msg": "日志已清空"})
+
+
+class AdminQAHandler(BaseHandler):
+    """管理后台 - 智能问数（iframe内嵌）"""
+    @tornado.web.authenticated
+    def get(self):
+        self.render("user_chat.html", title="智能问数", username=self.current_user)
