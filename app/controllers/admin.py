@@ -1013,7 +1013,7 @@ def _build_opinion_gl_data(conn):
         r["d"] for r in conn.execute(
             "SELECT date('now', '-' || n || ' days') AS d "
             "FROM (SELECT 6 AS n UNION SELECT 5 UNION SELECT 4 UNION SELECT 3 "
-            "UNION SELECT 2 UNION SELECT 1 UNION SELECT 0) "
+            "UNION SELECT 2 UNION SELECT 1 UNION SELECT 0) AS nums "
             "ORDER BY d"
         ).fetchall()
     ]
@@ -1539,3 +1539,124 @@ class WordCloudApiHandler(BaseHandler):
         data = [{"name": w, "value": c} for w, c in sorted_words]
 
         self.write({"code": 0, "data": data})
+
+
+# ====== 数据库切换 ======
+
+class DbSwitchHandler(BaseHandler):
+    """数据库切换页面"""
+    @tornado.web.authenticated
+    def get(self):
+        from app.models.db import get_db_type, get_db_config
+        db_type = get_db_type()
+        config = get_db_config()
+        self.render("admin_db_switch.html", title="数据库切换",
+                     db_type=db_type, config=config)
+
+
+class DbSwitchApiHandler(BaseHandler):
+    """数据库切换 API"""
+
+    @tornado.web.authenticated
+    def get(self):
+        """获取当前数据库配置"""
+        from app.models.db import get_db_type, get_db_config
+        db_type = get_db_type()
+        config = get_db_config()
+        # 隐藏密码
+        config.pop("password", None)
+        self.write({"code": 0, "data": {
+            "db_type": db_type,
+            "config": config
+        }})
+
+    @tornado.web.authenticated
+    def post(self):
+        """切换数据库"""
+        try:
+            body = self.get_json()
+        except Exception:
+            body = {}
+        db_type = body.get("db_type", "") or self.get_body_argument("db_type", "")
+        if db_type not in ("sqlite", "mysql"):
+            self.write({"code": 1, "msg": "不支持的数据库类型"})
+            return
+
+        kwargs = {}
+        if db_type == "mysql":
+            kwargs["host"] = body.get("host", "") or self.get_body_argument("host", "localhost")
+            kwargs["port"] = int(body.get("port", 3306) or self.get_body_argument("port", "3306"))
+            kwargs["user"] = body.get("user", "") or self.get_body_argument("user", "root")
+            kwargs["password"] = body.get("password", "") or self.get_body_argument("password", "")
+            kwargs["database"] = body.get("database", "") or self.get_body_argument("database", "xhaos")
+
+            # 🔒 先验证 MySQL 连接，成功后再保存配置
+            try:
+                import pymysql
+                conn = pymysql.connect(
+                    host=kwargs["host"], port=kwargs["port"],
+                    user=kwargs["user"], password=kwargs["password"],
+                    database=kwargs["database"], charset="utf8mb4",
+                    connect_timeout=5,
+                )
+                conn.close()
+            except ImportError:
+                self.write({"code": 1, "msg": "pymysql 未安装，请执行 pip install pymysql"})
+                return
+            except pymysql.err.OperationalError as e:
+                code, msg = e.args if len(e.args) == 2 else (0, str(e))
+                friendly = {
+                    1045: "用户名或密码错误",
+                    1049: f"数据库 '{kwargs['database']}' 不存在",
+                    2003: f"无法连接到 {kwargs['host']}:{kwargs['port']}，请检查地址和端口",
+                    2005: f"未知的主机 '{kwargs['host']}'",
+                }
+                self.write({"code": 1, "msg": friendly.get(code, msg)})
+                return
+            except Exception as e:
+                self.write({"code": 1, "msg": f"连接失败: {str(e)}"})
+                return
+
+        from app.models.db import switch_database
+        msg = switch_database(db_type, **kwargs)
+        self.write({"code": 0, "msg": f"{msg}，请刷新页面生效"})
+
+
+class DbSwitchTestApiHandler(BaseHandler):
+    """测试数据库连接"""
+    @tornado.web.authenticated
+    def post(self):
+        try:
+            body = self.get_json()
+        except Exception:
+            body = {}
+
+        db_type = body.get("db_type", "mysql")
+        host = body.get("host", "localhost")
+        port = int(body.get("port", 3306))
+        user = body.get("user", "root")
+        password = body.get("password", "")
+        database = body.get("database", "xhaos")
+
+        try:
+            import pymysql
+            conn = pymysql.connect(
+                host=host, port=port, user=user, password=password,
+                database=database, charset="utf8mb4",
+                connect_timeout=5,
+            )
+            conn.close()
+            self.write({"code": 0, "msg": "连接成功"})
+        except ImportError:
+            self.write({"code": 1, "msg": "pymysql 未安装，请执行 pip install pymysql"})
+        except pymysql.err.OperationalError as e:
+            code, msg = e.args if len(e.args) == 2 else (0, str(e))
+            friendly = {
+                1045: "用户名或密码错误",
+                1049: f"数据库 '{database}' 不存在",
+                2003: f"无法连接到 {host}:{port}，请检查地址和端口",
+                2005: f"未知的主机 '{host}'",
+            }
+            self.write({"code": 1, "msg": friendly.get(code, msg)})
+        except Exception as e:
+            self.write({"code": 1, "msg": f"连接失败: {str(e)}"})

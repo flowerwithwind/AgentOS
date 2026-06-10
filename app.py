@@ -54,6 +54,8 @@ from app.controllers.admin import (
     AdminQAHandler,
     # 词云
     WordCloudApiHandler,
+    # 数据库切换
+    DbSwitchHandler, DbSwitchApiHandler, DbSwitchTestApiHandler,
 )
 from app.models.db import init_db, get_connection
 from app.models.user import UserRepository
@@ -179,6 +181,10 @@ def make_app():
         (r"/admin/settings/logo", SystemSettingLogoUploadHandler),
         (r"/admin/settings/logs/api", SystemSettingLogApiHandler),
         (r"/admin/settings/logs/clear", SystemSettingLogClearHandler),
+        # 数据库切换
+        (r"/admin/db-switch", DbSwitchHandler),
+        (r"/admin/db-switch/api", DbSwitchApiHandler),
+        (r"/admin/db-switch/test", DbSwitchTestApiHandler),
         # 用户侧接口
         (r"/api/digital_employee/by_name", DigitalEmployeeByNameApiHandler),
     ], **settings)
@@ -189,7 +195,7 @@ def migrate_db():
     with get_connection() as conn:
         try:
             conn.execute("ALTER TABLE users ADD COLUMN role_id INTEGER DEFAULT 1")
-        except sqlite3.OperationalError:
+        except Exception:
             pass  # 列已存在
         for sql in (
             "ALTER TABLE user_sessions ADD COLUMN mode TEXT DEFAULT 'chat'",
@@ -197,7 +203,7 @@ def migrate_db():
         ):
             try:
                 conn.execute(sql)
-            except sqlite3.OperationalError:
+            except Exception:
                 pass
 
 
@@ -240,6 +246,7 @@ def seed_data():
             (15, "对话记录", "layui-icon-dialogue", "/admin/conversations",14, 2, 1),
             (19, "会话管理", "layui-icon-log",      "/admin/session",     14, 3, 1),
             (21, "系统设置", "layui-icon-set",      "/admin/settings",    2, 6, 1),
+            (22, "数据库切换", "layui-icon-engine", "/admin/db-switch",  2, 7, 1),
         ]
         for fid, fname, ficon, furl, fparent, fsort, fmenu in funcs:
             conn.execute(

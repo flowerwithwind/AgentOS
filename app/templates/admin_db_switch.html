@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }} - XHAgentOS</title>
+    <link rel="stylesheet" type="text/css" href="{{ static_url('lib/layui/css/layui.css') }}">
+    <style>
+        body { padding: 20px; background: #f5f6fa; font-family: -apple-system, sans-serif; }
+        .page-title {
+            font-size: 18px; font-weight: 600; color: #1a1a2e;
+            margin-bottom: 20px; padding-bottom: 12px;
+            border-bottom: 2px solid #e8e8e8;
+        }
+        .page-title .layui-icon { font-size: 20px; margin-right: 6px; color: #5fb878; }
+        .setting-card {
+            background: #fff; border-radius: 6px; padding: 24px;
+            margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .setting-card h3 {
+            font-size: 15px; color: #1a1a2e; margin-bottom: 16px;
+            padding-bottom: 10px; border-bottom: 1px solid #f0f0f0;
+        }
+        .setting-card h3 .layui-icon { margin-right: 6px; color: #5fb878; }
+        .layui-form-label { width: 140px; }
+        .layui-input-block { margin-left: 170px; }
+        .layui-form-mid { color: #999; font-size: 12px; }
+        .db-type-radio {
+            display: inline-block;
+            width: 200px; height: 100px;
+            border: 2px solid #e8e8e8;
+            border-radius: 8px;
+            text-align: center;
+            line-height: 100px;
+            cursor: pointer;
+            margin-right: 24px;
+            transition: all 0.3s;
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+            background: #fafafa;
+            user-select: none;
+        }
+        .db-type-radio:hover {
+            border-color: #5fb878;
+            color: #5fb878;
+        }
+        .db-type-radio.active {
+            border-color: #5fb878;
+            color: #5fb878;
+            background: #f0faf4;
+        }
+        .db-type-radio .layui-icon {
+            font-size: 28px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        .db-type-radio input { display: none; }
+        .mysql-config { display: none; }
+        .mysql-config.show { display: block; }
+        .config-tip {
+            background: #fef9e7;
+            border: 1px solid #f9e79f;
+            border-radius: 4px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #856404;
+            margin-bottom: 16px;
+        }
+        .config-tip .layui-icon { margin-right: 4px; }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-badge.sqlite {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status-badge.mysql {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <div class="page-title">
+        <i class="layui-icon layui-icon-engine"></i> 数据库切换
+    </div>
+
+    <form class="layui-form" id="dbSwitchForm">
+        <!-- 当前状态 -->
+        <div class="setting-card">
+            <h3><i class="layui-icon layui-icon-flag"></i> 当前数据库状态</h3>
+            <div style="padding:8px 0;">
+                <span style="font-size:14px;color:#555;">当前使用：</span>
+                <span class="status-badge {{ 'sqlite' if db_type == 'sqlite' else 'mysql' }}">
+                    <i class="layui-icon {{ 'layui-icon-ok' if db_type == 'sqlite' else 'layui-icon-engine' }}"></i>
+                    {{ 'SQLite' if db_type == 'sqlite' else 'MySQL' }}
+                </span>
+                {% if db_type == 'mysql' %}
+                <span style="margin-left:16px;font-size:13px;color:#888;">
+                    {{ config.get('host', 'localhost') }}:{{ config.get('port', '3306') }}
+                    / {{ config.get('database', 'xhaos') }}
+                </span>
+                {% end %}
+            </div>
+        </div>
+
+        <!-- 数据库类型选择 -->
+        <div class="setting-card">
+            <h3><i class="layui-icon layui-icon-set"></i> 选择数据库类型</h3>
+
+            <div style="padding:12px 0;">
+                <label class="db-type-radio {{ 'active' if db_type == 'sqlite' else '' }}"
+                       onclick="selectDbType('sqlite', this)">
+                    <input type="radio" name="db_type" value="sqlite"
+                           {{ 'checked' if db_type == 'sqlite' else '' }}>
+                    <i class="layui-icon layui-icon-ok-circle"></i> SQLite
+                </label>
+                <label class="db-type-radio {{ 'active' if db_type == 'mysql' else '' }}"
+                       onclick="selectDbType('mysql', this)">
+                    <input type="radio" name="db_type" value="mysql"
+                           {{ 'checked' if db_type == 'mysql' else '' }}>
+                    <i class="layui-icon layui-icon-engine"></i> MySQL
+                </label>
+            </div>
+        </div>
+
+        <!-- MySQL 配置 -->
+        <div class="setting-card mysql-config {{ 'show' if db_type == 'mysql' else '' }}" id="mysqlConfig">
+            <h3><i class="layui-icon layui-icon-component"></i> MySQL 连接配置</h3>
+            <div class="config-tip">
+                <i class="layui-icon layui-icon-tips"></i>
+                切换后将立即使用新数据库连接。请确保 MySQL 服务已启动且数据库已创建。
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">主机地址</label>
+                <div class="layui-input-block">
+                    <input type="text" name="host" id="host"
+                           class="layui-input" value="{{ config.get('host', 'localhost') }}"
+                           placeholder="localhost">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">端口</label>
+                <div class="layui-input-block">
+                    <input type="number" name="port" id="port"
+                           class="layui-input" value="{{ config.get('port', '3306') }}"
+                           style="width:120px;" placeholder="3306">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">用户名</label>
+                <div class="layui-input-block">
+                    <input type="text" name="user" id="user"
+                           class="layui-input" value="{{ config.get('user', 'root') }}"
+                           placeholder="root">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">密码</label>
+                <div class="layui-input-block">
+                    <input type="password" name="password" id="password"
+                           class="layui-input" value="" placeholder="请输入MySQL密码">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">数据库名</label>
+                <div class="layui-input-block">
+                    <input type="text" name="database" id="database"
+                           class="layui-input" value="{{ config.get('database', 'xhaos') }}"
+                           placeholder="xhaos">
+                    <div class="layui-form-mid layui-word-aux">请提前创建好数据库</div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block" style="margin-left:170px;">
+                    <button type="button" class="layui-btn layui-btn-primary" id="testConnBtn"
+                            style="border-color:#5fb878;color:#5fb878;">
+                        <i class="layui-icon layui-icon-vercode"></i> 测试连接
+                    </button>
+                    <span id="testResult" style="margin-left:12px;font-size:13px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="setting-card" style="text-align:center;">
+            <button class="layui-btn layui-btn-lg" lay-submit lay-filter="saveBtn"
+                    style="padding:0 48px;height:44px;line-height:44px;font-size:15px;">
+                <i class="layui-icon layui-icon-ok"></i> 保存并切换
+            </button>
+            <div style="margin-top:12px;font-size:12px;color:#999;">
+                提示：切换后将立即生效，建议在系统低负载时操作
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="{{ static_url('lib/layui/layui.js') }}"></script>
+<script>
+function getCookie(name) {
+    var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+    return r ? r[1] : undefined;
+}
+
+function selectDbType(type, el) {
+    // 切换 radio 选中样式
+    document.querySelectorAll('.db-type-radio').forEach(function(e) {
+        e.classList.remove('active');
+        e.querySelector('input').checked = false;
+    });
+    el.classList.add('active');
+    el.querySelector('input').checked = true;
+
+    // 显示/隐藏 MySQL 配置
+    var cfg = document.getElementById('mysqlConfig');
+    if (type === 'mysql') {
+        cfg.classList.add('show');
+    } else {
+        cfg.classList.remove('show');
+    }
+}
+
+layui.use(['form', 'layer'], function(){
+    var form = layui.form, layer = layui.layer, $ = layui.$;
+
+    $.ajaxSetup({
+        beforeSend: function(xhr) { xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf')); }
+    });
+
+    // 保存并切换
+    form.on('submit(saveBtn)', function(data){
+        var dbType = document.querySelector('input[name="db_type"]:checked');
+        if (!dbType) {
+            layer.msg('请选择数据库类型', {icon: 2});
+            return false;
+        }
+
+        var params = { db_type: dbType.value };
+
+        if (dbType.value === 'mysql') {
+            var pwd = $('#password').val() || '';
+            if (!pwd) {
+                layer.msg('请输入 MySQL 密码', {icon: 2});
+                return false;
+            }
+            params.host = $('#host').val() || 'localhost';
+            params.port = $('#port').val() || '3306';
+            params.user = $('#user').val() || 'root';
+            params.password = pwd;
+            params.database = $('#database').val() || 'xhaos';
+        }
+
+        var btn = $(this);
+        btn.text('正在切换...').attr('disabled', true);
+
+        $.post('/admin/db-switch/api', JSON.stringify(params), function(res){
+            btn.text('保存并切换').attr('disabled', false);
+            if (res.code === 0) {
+                layer.confirm(res.msg, {
+                    icon: 1,
+                    title: '操作成功',
+                    btn: ['刷新页面', '稍后刷新']
+                }, function(index){
+                    layer.close(index);
+                    parent.location.reload();
+                }, function(index){
+                    layer.close(index);
+                });
+            } else {
+                layer.msg(res.msg || '切换失败', {icon: 2, time: 3000});
+            }
+        }, 'json').fail(function(){
+            btn.text('保存并切换').attr('disabled', false);
+            layer.msg('请求失败，请检查网络', {icon: 2});
+        });
+
+        return false;
+    });
+
+    // 测试数据库连接
+    $('#testConnBtn').on('click', function(){
+        var dbType = document.querySelector('input[name="db_type"]:checked');
+        if (!dbType || dbType.value !== 'mysql') {
+            $('#testResult').html('<span style="color:#f56c6c;">请先选择 MySQL</span>');
+            return;
+        }
+
+        var params = {
+            db_type: 'mysql',
+            host: $('#host').val() || 'localhost',
+            port: $('#port').val() || '3306',
+            user: $('#user').val() || 'root',
+            password: $('#password').val() || '',
+            database: $('#database').val() || 'xhaos'
+        };
+
+        if (!params.password) {
+            $('#testResult').html('<span style="color:#f56c6c;">请先输入密码</span>');
+            return;
+        }
+
+        var btn = $(this);
+        btn.text('测试中...').attr('disabled', true);
+        $('#testResult').html('<span style="color:#999;">连接测试中...</span>');
+
+        $.post('/admin/db-switch/test', JSON.stringify(params), function(res){
+            btn.text('测试连接').attr('disabled', false);
+            if (res.code === 0) {
+                $('#testResult').html('<span style="color:#5fb878;"><i class="layui-icon layui-icon-ok"></i> ' + res.msg + '</span>');
+            } else {
+                $('#testResult').html('<span style="color:#f56c6c;"><i class="layui-icon layui-icon-close"></i> ' + res.msg + '</span>');
+            }
+        }, 'json').fail(function(){
+            btn.text('测试连接').attr('disabled', false);
+            $('#testResult').html('<span style="color:#f56c6c;">请求失败，请检查网络</span>');
+        });
+    });
+
+    // 接收来自父窗口的主题色
+    window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'xha_theme') {
+            document.documentElement.style.setProperty('--theme-color', e.data.theme_color);
+        }
+    });
+    var savedColor = localStorage.getItem('xha_theme_color');
+    if (savedColor) {
+        document.documentElement.style.setProperty('--theme-color', savedColor);
+    }
+});
+</script>
+</body>
+</html>

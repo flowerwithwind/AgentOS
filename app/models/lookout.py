@@ -509,7 +509,7 @@ class DeepCollectTask:
         try:
             with get_connection() as conn:
                 conn.execute("ALTER TABLE lookout_records ADD COLUMN full_content TEXT DEFAULT ''")
-        except sqlite3.OperationalError:
+        except Exception:
             pass
 
     @classmethod

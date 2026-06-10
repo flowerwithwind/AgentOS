@@ -9,6 +9,7 @@ build/
 
 # Database
 database/*.db
+database/db_config.json
 *.sqlite
 *.sqlite3
 
