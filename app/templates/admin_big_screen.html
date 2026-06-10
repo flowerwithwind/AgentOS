@@ -154,6 +154,14 @@
         </div>
     </div>
 
+    <div class="section-title">全球数据分布 · 3D 地球</div>
+    <div class="charts-row">
+        <div class="panel gl full">
+            <h3>采集源地理位置分布</h3>
+            <div class="chart-wrap" id="globeChart" style="height:500px;"></div>
+        </div>
+    </div>
+
 <script src="{{ static_url('lib/layui/layui.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
@@ -283,17 +291,113 @@ layui.use(['layer'], function(){
                 d.opinion_gl
             );
 
+            // 初始化3D地球
+            initGlobeChart();
+
             window.addEventListener('resize', function(){
                 pieChart.resize();
                 barChart.resize();
                 lineChart.resize();
                 wordCloudChart.resize();
                 glCharts.forEach(function(c){ c.resize(); });
+                var gc = echarts.getInstanceByDom(document.getElementById('globeChart'));
+                if(gc) gc.resize();
             });
         });
 
         document.getElementById('wcSource').addEventListener('change', function(){
             loadWordCloud(wordCloudChart);
+        });
+    }
+
+    // 初始化3D地球
+    function initGlobeChart(){
+        var globeChart = echarts.init(document.getElementById('globeChart'));
+
+        // 模拟全球数据点
+        var mockGlobeData = [
+            { name: '北京', value: [116.4074, 39.9042, 15] },
+            { name: '上海', value: [121.4737, 31.2304, 12] },
+            { name: '东京', value: [139.6917, 35.6895, 8] },
+            { name: '纽约', value: [-74.0060, 40.7128, 10] },
+            { name: '伦敦', value: [-0.1276, 51.5074, 6] },
+            { name: '巴黎', value: [2.3522, 48.8566, 5] },
+            { name: '悉尼', value: [151.2093, -33.8688, 4] },
+            { name: '新加坡', value: [103.8198, 1.3521, 7] },
+            { name: '莫斯科', value: [37.6173, 55.7558, 9] },
+            { name: '迪拜', value: [55.2708, 25.2048, 6] },
+            { name: '首尔', value: [126.9780, 37.5665, 11] },
+            { name: '曼谷', value: [100.5167, 13.7500, 5] }
+        ];
+
+        globeChart.setOption({
+            backgroundColor: '#fff',
+            tooltip: {
+                trigger: 'item',
+                backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                borderColor: '#1e9fff',
+                borderWidth: 1,
+                padding: [10, 15],
+                textStyle: { color: '#333', fontSize: 13 }
+            },
+            globe: {
+                baseColor: '#1a3a5c',
+                displacementScale: 0,
+                shading: 'color',
+                light: {
+                    ambient: { intensity: 0.3, color: '#4a6fa5' },
+                    main: { intensity: 0.8, position: [100, 50, 100] }
+                },
+                viewControl: {
+                    autoRotate: true,
+                    autoRotateSpeed: 1.5,
+                    distance: 180
+                },
+                atmosphere: {
+                    show: true,
+                    color: '#0d47a1',
+                    opacity: 0.25
+                }
+            },
+            series: [{
+                type: 'scatter3D',
+                coordinateSystem: 'globe',
+                symbol: 'circle',
+                symbolSize: function(val) {
+                    return val[2] * 1.5 + 8;
+                },
+                itemStyle: {
+                    color: '#52c41a',
+                    opacity: 0.9
+                },
+                label: {
+                    show: true,
+                    formatter: function(params) {
+                        return params.name;
+                    },
+                    position: 'top',
+                    color: '#fff',
+                    fontSize: 11,
+                    distance: 4,
+                    textBorderColor: 'rgba(0, 0, 0, 0.8)',
+                    textBorderWidth: 2
+                },
+                emphasis: {
+                    scale: 1.5,
+                    itemStyle: { color: '#1890ff' }
+                },
+                tooltip: {
+                    formatter: function(params) {
+                        return '<div style="padding:8px 12px;">' +
+                            '<div style="font-weight:bold;color:#1e9fff;margin-bottom:4px;">📍 ' + params.name + '</div>' +
+                            '<div style="color:#666;">数据量: <span style="color:#333;font-weight:bold;">' + params.value[2] + ' 条</span></div>' +
+                            '</div>';
+                    }
+                },
+                data: mockGlobeData.map(function(item) {
+                    return { name: item.name, value: item.value };
+                })
+            }]
         });
     }
 
