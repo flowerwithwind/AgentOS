@@ -991,6 +991,81 @@ class BigScreenHandler(BaseHandler):
                      username=_get_username(self))
 
 
+def _build_opinion_gl_data(conn):
+    """智慧舆情 Echarts-GL 三维数据（团队任务三 — 向党）"""
+    conversation_count = conn.execute(
+        "SELECT COUNT(*) AS cnt FROM conversations"
+    ).fetchone()["cnt"]
+    session_count = conn.execute(
+        "SELECT COUNT(*) AS cnt FROM user_sessions"
+    ).fetchone()["cnt"]
+    message_count = conn.execute(
+        "SELECT COUNT(*) AS cnt FROM session_messages"
+    ).fetchone()["cnt"]
+
+    top_sources = conn.execute(
+        "SELECT s.id, s.name, COUNT(lr.id) AS cnt "
+        "FROM lookout_sources s LEFT JOIN lookout_records lr ON lr.source_id = s.id "
+        "GROUP BY s.id ORDER BY cnt DESC LIMIT 6"
+    ).fetchall()
+
+    days = [
+        r["d"] for r in conn.execute(
+            "SELECT date('now', '-' || n || ' days') AS d "
+            "FROM (SELECT 6 AS n UNION SELECT 5 UNION SELECT 4 UNION SELECT 3 "
+            "UNION SELECT 2 UNION SELECT 1 UNION SELECT 0) "
+            "ORDER BY d"
+        ).fetchall()
+    ]
+    day_labels = [d[5:] if d else "" for d in days]
+
+    source_names = [r["name"] for r in top_sources]
+    bar3d_data = []
+    for si, row in enumerate(top_sources):
+        for di, day in enumerate(days):
+            cnt = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM lookout_records "
+                "WHERE source_id = ? AND date(collected_at) = ?",
+                (row["id"], day),
+            ).fetchone()["cnt"]
+            bar3d_data.append([di, si, cnt])
+
+    if not source_names:
+        source_names = ["暂无采集源"]
+        bar3d_data = [[0, 0, 0]]
+
+    scatter3d_data = []
+    for di, day in enumerate(days):
+        conv = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM conversations WHERE date(created_at) = ?",
+            (day,),
+        ).fetchone()["cnt"]
+        lookout = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM lookout_records WHERE date(collected_at) = ?",
+            (day,),
+        ).fetchone()["cnt"]
+        msgs = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM session_messages WHERE date(created_at) = ?",
+            (day,),
+        ).fetchone()["cnt"]
+        scatter3d_data.append({
+            "value": [conv, lookout, msgs],
+            "name": day_labels[di],
+        })
+
+    return {
+        "conversation_count": conversation_count,
+        "session_count": session_count,
+        "message_count": message_count,
+        "bar3d": {
+            "days": day_labels,
+            "sources": source_names,
+            "data": bar3d_data,
+        },
+        "scatter3d": scatter3d_data,
+    }
+
+
 class BigScreenApiHandler(BaseHandler):
     """数智大屏统计数据"""
     @tornado.web.authenticated
@@ -1031,6 +1106,8 @@ class BigScreenApiHandler(BaseHandler):
                     "calls": r["total_calls"]
                 })
 
+            opinion_gl = _build_opinion_gl_data(conn)
+
         self.write({
             "code": 0,
             "data": {
@@ -1041,6 +1118,10 @@ class BigScreenApiHandler(BaseHandler):
                 "source_stats": source_stats,
                 "trend": trend,
                 "model_stats": model_stats,
+                "conversation_count": opinion_gl["conversation_count"],
+                "session_count": opinion_gl["session_count"],
+                "message_count": opinion_gl["message_count"],
+                "opinion_gl": opinion_gl,
             }
         })
 class DigitalEmployeeCreateHandler(BaseHandler):

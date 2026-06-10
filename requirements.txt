@@ -5,3 +5,4 @@ beautifulsoup4>=4.12
 openpyxl>=3.1
 fpdf2>=2.7
 jieba>=0.42
+apscheduler>=3.10

@@ -17,7 +17,7 @@
 
         .stats-row {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(6, 1fr);
             gap: 16px;
             margin-bottom: 20px;
         }
@@ -33,6 +33,13 @@
         .stat-card:nth-child(2) .icon { color: #1e9fff; }
         .stat-card:nth-child(3) .icon { color: #ffb800; }
         .stat-card:nth-child(4) .icon { color: #f56c6c; }
+        .stat-card:nth-child(5) .icon { color: #8c6bf5; }
+        .stat-card:nth-child(6) .icon { color: #36cfc9; }
+
+        .section-title {
+            font-size: 16px; color: #1a1a2e; margin: 8px 0 16px;
+            padding-left: 10px; border-left: 4px solid #1e9fff; font-weight: 600;
+        }
 
         .charts-row {
             display: grid;
@@ -52,11 +59,15 @@
             width: 100%;
             height: 300px;
         }
+        .panel.gl .chart-wrap { height: 380px; }
         .panel.full {
             grid-column: 1 / -1;
         }
         .panel.full .chart-wrap { height: 250px; }
 
+        @media (max-width: 1200px) {
+            .stats-row { grid-template-columns: repeat(3, 1fr); }
+        }
         @media (max-width: 900px) {
             .stats-row { grid-template-columns: repeat(2, 1fr); }
             .charts-row { grid-template-columns: 1fr; }
@@ -86,6 +97,16 @@
             <div class="label">采集记录</div>
             <div class="value" id="recordCount">-</div>
             <div class="icon layui-icon layui-icon-list"></div>
+        </div>
+        <div class="stat-card">
+            <div class="label">对话总数</div>
+            <div class="value" id="conversationCount">-</div>
+            <div class="icon layui-icon layui-icon-dialogue"></div>
+        </div>
+        <div class="stat-card">
+            <div class="label">会话总数</div>
+            <div class="value" id="sessionCount">-</div>
+            <div class="icon layui-icon layui-icon-tabs"></div>
         </div>
     </div>
 
@@ -121,18 +142,30 @@
         </div>
     </div>
 
+    <div class="section-title">智慧舆情 · Echarts-GL 三维分析</div>
+    <div class="charts-row">
+        <div class="panel gl">
+            <h3>采集源 × 日期 舆情热力矩阵（bar3D）</h3>
+            <div class="chart-wrap" id="bar3dChart"></div>
+        </div>
+        <div class="panel gl">
+            <h3>对话 / 瞭望 / 会话 三维关联（scatter3D）</h3>
+            <div class="chart-wrap" id="scatter3dChart"></div>
+        </div>
+    </div>
+
 <script src="{{ static_url('lib/layui/layui.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
+<script src="{{ static_url('js/big_screen_echarts_gl.js') }}"></script>
 <script>
-// 如果 jsdelivr 加载失败，尝试 unpkg 备用 CDN
 if(typeof echartsWordCloud === 'undefined'){
     var s = document.createElement('script');
     s.src = 'https://unpkg.com/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js';
     document.head.appendChild(s);
 }
-</script>
-<script>
+
 function getCookie(name) {
     var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
     return r ? r[1] : undefined;
@@ -144,9 +177,9 @@ layui.use(['layer'], function(){
         beforeSend: function(xhr) { xhr.setRequestHeader('X-Xsrftoken', getCookie('_xsrf')); }
     });
 
-    // Echarts 主题色
     var colors = ['#5fb878', '#1e9fff', '#ffb800', '#f56c6c', '#909399',
                   '#8c6bf5', '#36cfc9', '#ff85c0', '#ffc53d', '#597ef7'];
+    var glCharts = [];
 
     function initCharts(){
         var pieChart = echarts.init(document.getElementById('pieChart'));
@@ -154,48 +187,37 @@ layui.use(['layer'], function(){
         var lineChart = echarts.init(document.getElementById('lineChart'));
         var wordCloudChart = echarts.init(document.getElementById('wordCloudChart'));
 
-        // 词云独立加载，不依赖其他图表 API
         loadWordCloud(wordCloudChart);
 
         $.get('/admin/big-screen/api', function(res){
             if(res.code !== 0) return;
             var d = res.data;
 
-            // 统计卡片
             document.getElementById('userCount').textContent = d.user_count;
             document.getElementById('modelCount').textContent = d.model_count;
             document.getElementById('sourceCount').textContent = d.source_count;
             document.getElementById('recordCount').textContent = d.record_count;
+            document.getElementById('conversationCount').textContent = d.conversation_count || 0;
+            document.getElementById('sessionCount').textContent = d.session_count || 0;
 
-            // 饼图 - 各采集源数据分布
             var pieData = (d.source_stats || []).length > 0 ? d.source_stats : [{name: '暂无数据', value: 1}];
             pieChart.setOption({
                 tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-                legend: {
-                    bottom: 0,
-                    textStyle: { color: '#8c8c8c', fontSize: 11 },
-                },
+                legend: { bottom: 0, textStyle: { color: '#8c8c8c', fontSize: 11 } },
                 series: [{
                     type: 'pie',
                     radius: ['40%', '65%'],
                     center: ['50%', '45%'],
                     avoidLabelOverlap: true,
-                    itemStyle: {
-                        borderRadius: 6,
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    },
+                    itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
                     label: { show: false },
-                    emphasis: {
-                        label: { show: true, fontSize: 14, fontWeight: 'bold', color: '#1a1a2e' }
-                    },
+                    emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold', color: '#1a1a2e' } },
                     data: pieData.map(function(item, idx){
                         return { value: item.value, name: item.name, itemStyle: { color: colors[idx % colors.length] } };
                     })
                 }]
             });
 
-            // 柱状图 - 模型Token使用排行
             var barData = d.model_stats || [];
             barChart.setOption({
                 tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
@@ -218,22 +240,13 @@ layui.use(['layer'], function(){
                     data: barData.map(function(m, idx){
                         return {
                             value: m.tokens,
-                            itemStyle: {
-                                color: colors[idx % colors.length],
-                                borderRadius: [4, 4, 0, 0]
-                            }
+                            itemStyle: { color: colors[idx % colors.length], borderRadius: [4, 4, 0, 0] }
                         };
                     }),
-                    label: {
-                        show: true,
-                        position: 'top',
-                        color: '#8c8c8c',
-                        fontSize: 10
-                    }
+                    label: { show: true, position: 'top', color: '#8c8c8c', fontSize: 10 }
                 }]
             });
 
-            // 折线图 - 近7天采集趋势
             var trendData = d.trend || [];
             var dates = trendData.map(function(t){ return t.date ? t.date.slice(5) : ''; });
             var counts = trendData.map(function(t){ return t.count; });
@@ -243,11 +256,8 @@ layui.use(['layer'], function(){
                 tooltip: { trigger: 'axis' },
                 grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
                 xAxis: {
-                    type: 'category',
-                    data: dates,
-                    boundaryGap: false,
-                    axisLabel: { color: '#8c8c8c' },
-                    axisLine: { show: false },
+                    type: 'category', data: dates, boundaryGap: false,
+                    axisLabel: { color: '#8c8c8c' }, axisLine: { show: false },
                 },
                 yAxis: {
                     type: 'value',
@@ -255,11 +265,7 @@ layui.use(['layer'], function(){
                     axisLabel: { color: '#8c8c8c' },
                 },
                 series: [{
-                    type: 'line',
-                    smooth: true,
-                    symbol: 'circle',
-                    symbolSize: 8,
-                    data: counts,
+                    type: 'line', smooth: true, symbol: 'circle', symbolSize: 8, data: counts,
                     lineStyle: { width: 3, color: '#5fb878' },
                     areaStyle: {
                         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -271,16 +277,21 @@ layui.use(['layer'], function(){
                 }]
             });
 
-            // 窗口大小变化自适应
+            glCharts = initOpinionGlCharts(
+                document.getElementById('bar3dChart'),
+                document.getElementById('scatter3dChart'),
+                d.opinion_gl
+            );
+
             window.addEventListener('resize', function(){
                 pieChart.resize();
                 barChart.resize();
                 lineChart.resize();
                 wordCloudChart.resize();
+                glCharts.forEach(function(c){ c.resize(); });
             });
         });
 
-        // 数据源切换时重新加载词云
         document.getElementById('wcSource').addEventListener('change', function(){
             loadWordCloud(wordCloudChart);
         });
@@ -289,7 +300,6 @@ layui.use(['layer'], function(){
     function loadWordCloud(chart){
         var source = document.getElementById('wcSource').value;
 
-        // 检查 echarts-wordcloud 扩展是否加载
         if(typeof chart.setOption !== 'function'){
             document.getElementById('wordCloudChart').innerHTML = '<div style="text-align:center;padding-top:120px;color:#bfbfbf;">词云扩展加载中...</div>';
             return;
@@ -300,8 +310,7 @@ layui.use(['layer'], function(){
                 series: [{
                     type: 'wordCloud',
                     shape: 'circle',
-                    width: '100%',
-                    height: '100%',
+                    width: '100%', height: '100%',
                     sizeRange: [14, 48],
                     rotationRange: [-30, 30],
                     rotationStep: 15,
@@ -316,9 +325,7 @@ layui.use(['layer'], function(){
                             return wcColors[Math.floor(Math.random() * wcColors.length)];
                         }
                     },
-                    emphasis: {
-                        textStyle: { fontWeight: 'bold', color: '#1a1a2e' }
-                    },
+                    emphasis: { textStyle: { fontWeight: 'bold', color: '#1a1a2e' } },
                     data: []
                 }]
             });
@@ -330,19 +337,11 @@ layui.use(['layer'], function(){
         layui.$.get('/admin/big-screen/wordcloud', { source: source }, function(res){
             if(res.code !== 0 || !res.data || res.data.length === 0){
                 chart.setOption({
-                    series: [{
-                        type: 'wordCloud',
-                        data: [{ name: '暂无数据', value: 1, textStyle: { color: '#bfbfbf' } }]
-                    }]
+                    series: [{ type: 'wordCloud', data: [{ name: '暂无数据', value: 1, textStyle: { color: '#bfbfbf' } }] }]
                 });
                 return;
             }
-            chart.setOption({
-                series: [{
-                    type: 'wordCloud',
-                    data: res.data
-                }]
-            });
+            chart.setOption({ series: [{ type: 'wordCloud', data: res.data }] });
         });
     }
 
