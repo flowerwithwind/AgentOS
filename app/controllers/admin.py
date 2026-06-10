@@ -1334,3 +1334,127 @@ class AdminQAHandler(BaseHandler):
     @tornado.web.authenticated
     def get(self):
         self.render("user_chat.html", title="智能问数", username=self.current_user)
+
+
+# ====== 词云 ======
+
+# 中文停用词表
+_STOP_WORDS = set([
+    "的", "了", "在", "是", "我", "有", "和", "就", "不", "人", "都", "一",
+    "一个", "上", "也", "很", "到", "说", "要", "去", "你", "会", "着",
+    "没有", "看", "好", "自己", "这", "他", "她", "它", "们", "那", "些",
+    "所", "为", "所以", "因为", "但是", "然而", "而且", "或者", "如果",
+    "虽然", "可以", "这个", "那个", "哪", "什么", "怎么", "如何", "为什么",
+    "还", "被", "把", "让", "给", "从", "以", "对", "向", "与", "及",
+    "等", "其", "之", "将", "已", "吧", "吗", "呢", "啊", "哦", "嗯",
+    "哈", "呀", "么", "啦", "哇", "哎", "唉", "嗯嗯", "呵呵", "哈哈",
+    "记者", "报道", "新闻", "等", "来", "中", "大", "时", "为", "能",
+    "更", "用", "做", "想", "成", "后", "前", "多", "只", "又", "再",
+    "吗", "嘛", "罢", "呗", "咚", "呀", "哟", "兮", "呃", "咳", "哗",
+    "目前", "进行", "通过", "根据", "相关", "表示", "认为", "已经",
+    "主要", "其中", "以及", "包括", "对于", "关于", "经过", "由于",
+    "随着", "为了", "除了", "不同", "比较", "非常", "特别", "真的",
+])
+
+_STOP_WORDS_EXTRA = set([
+    "nbsp", "quot", "amp", "gt", "lt", "mdash", "ndash", "ldquo", "rdquo",
+    "lsquo", "rsquo", "hellip", "middot", "times", "divide", "plusmn",
+])
+
+
+class WordCloudApiHandler(BaseHandler):
+    """词云数据 API"""
+    @tornado.web.authenticated
+    def get(self):
+        source = self.get_argument("source", "all")
+        date_from = self.get_argument("date_from", "")
+        date_to = self.get_argument("date_to", "")
+        limit = int(self.get_argument("limit", "100"))
+
+        texts = []
+        conditions = []
+        params = []
+
+        if date_from:
+            conditions.append("created_at >= ?")
+            params.append(date_from)
+        if date_to:
+            conditions.append("created_at <= ?")
+            params.append(date_to + " 23:59:59")
+
+        where = (" AND ".join(conditions)) if conditions else "1=1"
+
+        from app.models.db import get_connection
+
+        # 瞭望数据：标题 + 摘要
+        if source in ("lookout", "all"):
+            l_conds = []
+            l_params = []
+            if date_from:
+                l_conds.append("collected_at >= ?")
+                l_params.append(date_from)
+            if date_to:
+                l_conds.append("collected_at <= ?")
+                l_params.append(date_to + " 23:59:59")
+            l_where = (" AND ".join(l_conds)) if l_conds else "1=1"
+
+            with get_connection() as conn:
+                rows = conn.execute(
+                    f"SELECT title, summary FROM lookout_records WHERE {l_where}",
+                    l_params
+                ).fetchall()
+                for r in rows:
+                    t = (r["title"] or "") + " " + (r["summary"] or "")
+                    texts.append(t)
+
+        # 对话数据：提问 + 回答
+        if source in ("chat", "all"):
+            c_conds = []
+            c_params = []
+            if date_from:
+                c_conds.append("created_at >= ?")
+                c_params.append(date_from)
+            if date_to:
+                c_conds.append("created_at <= ?")
+                c_params.append(date_to + " 23:59:59")
+            c_where = (" AND ".join(c_conds)) if c_conds else "1=1"
+
+            with get_connection() as conn:
+                rows = conn.execute(
+                    f"SELECT question, answer FROM conversations WHERE {c_where}",
+                    c_params
+                ).fetchall()
+                for r in rows:
+                    t = (r["question"] or "") + " " + (r["answer"] or "")
+                    texts.append(t)
+
+        if not texts:
+            self.write({"code": 0, "data": []})
+            return
+
+        # jieba 分词 + 词频统计
+        try:
+            import jieba
+        except ImportError:
+            self.write({"code": 1, "msg": "jieba 未安装"})
+            return
+
+        all_text = " ".join(texts)
+        words = jieba.cut(all_text)
+        word_count = {}
+        for w in words:
+            w = w.strip().lower()
+            # 过滤：长度<2、纯数字、纯标点、停用词
+            if len(w) < 2:
+                continue
+            if w.isdigit():
+                continue
+            if w in _STOP_WORDS or w in _STOP_WORDS_EXTRA:
+                continue
+            word_count[w] = word_count.get(w, 0) + 1
+
+        # 排序取 Top N
+        sorted_words = sorted(word_count.items(), key=lambda x: x[1], reverse=True)[:limit]
+        data = [{"name": w, "value": c} for w, c in sorted_words]
+
+        self.write({"code": 0, "data": data})

@@ -101,7 +101,21 @@
     </div>
 
     <div class="charts-row">
-        <div class="panel full">
+        <div class="panel">
+            <h3>
+                舆情热词
+                <span style="font-weight:400;font-size:12px;color:#8c8c8c;margin-left:12px;">
+                    数据源：
+                    <select id="wcSource" style="padding:2px 6px;border:1px solid #d9d9d9;border-radius:4px;font-size:12px;">
+                        <option value="all">全部</option>
+                        <option value="lookout">瞭望数据</option>
+                        <option value="chat">对话数据</option>
+                    </select>
+                </span>
+            </h3>
+            <div class="chart-wrap" id="wordCloudChart"></div>
+        </div>
+        <div class="panel">
             <h3>近 7 天采集趋势</h3>
             <div class="chart-wrap" id="lineChart"></div>
         </div>
@@ -109,6 +123,15 @@
 
 <script src="{{ static_url('lib/layui/layui.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js"></script>
+<script>
+// 如果 jsdelivr 加载失败，尝试 unpkg 备用 CDN
+if(typeof echartsWordCloud === 'undefined'){
+    var s = document.createElement('script');
+    s.src = 'https://unpkg.com/echarts-wordcloud@2.1.0/dist/echarts-wordcloud.min.js';
+    document.head.appendChild(s);
+}
+</script>
 <script>
 function getCookie(name) {
     var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
@@ -129,6 +152,10 @@ layui.use(['layer'], function(){
         var pieChart = echarts.init(document.getElementById('pieChart'));
         var barChart = echarts.init(document.getElementById('barChart'));
         var lineChart = echarts.init(document.getElementById('lineChart'));
+        var wordCloudChart = echarts.init(document.getElementById('wordCloudChart'));
+
+        // 词云独立加载，不依赖其他图表 API
+        loadWordCloud(wordCloudChart);
 
         $.get('/admin/big-screen/api', function(res){
             if(res.code !== 0) return;
@@ -249,6 +276,72 @@ layui.use(['layer'], function(){
                 pieChart.resize();
                 barChart.resize();
                 lineChart.resize();
+                wordCloudChart.resize();
+            });
+        });
+
+        // 数据源切换时重新加载词云
+        document.getElementById('wcSource').addEventListener('change', function(){
+            loadWordCloud(wordCloudChart);
+        });
+    }
+
+    function loadWordCloud(chart){
+        var source = document.getElementById('wcSource').value;
+
+        // 检查 echarts-wordcloud 扩展是否加载
+        if(typeof chart.setOption !== 'function'){
+            document.getElementById('wordCloudChart').innerHTML = '<div style="text-align:center;padding-top:120px;color:#bfbfbf;">词云扩展加载中...</div>';
+            return;
+        }
+
+        try {
+            chart.setOption({
+                series: [{
+                    type: 'wordCloud',
+                    shape: 'circle',
+                    width: '100%',
+                    height: '100%',
+                    sizeRange: [14, 48],
+                    rotationRange: [-30, 30],
+                    rotationStep: 15,
+                    gridSize: 8,
+                    drawOutOfBound: false,
+                    layoutAnimation: true,
+                    textStyle: {
+                        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        fontWeight: 'normal',
+                        color: function() {
+                            var wcColors = ['#5fb878','#1e9fff','#ffb800','#f56c6c','#8c6bf5','#36cfc9','#ff85c0','#597ef7','#2f4554','#61a0a8'];
+                            return wcColors[Math.floor(Math.random() * wcColors.length)];
+                        }
+                    },
+                    emphasis: {
+                        textStyle: { fontWeight: 'bold', color: '#1a1a2e' }
+                    },
+                    data: []
+                }]
+            });
+        } catch(e) {
+            document.getElementById('wordCloudChart').innerHTML = '<div style="text-align:center;padding-top:120px;color:#f56c6c;">词云组件加载失败，请刷新重试</div>';
+            return;
+        }
+
+        layui.$.get('/admin/big-screen/wordcloud', { source: source }, function(res){
+            if(res.code !== 0 || !res.data || res.data.length === 0){
+                chart.setOption({
+                    series: [{
+                        type: 'wordCloud',
+                        data: [{ name: '暂无数据', value: 1, textStyle: { color: '#bfbfbf' } }]
+                    }]
+                });
+                return;
+            }
+            chart.setOption({
+                series: [{
+                    type: 'wordCloud',
+                    data: res.data
+                }]
             });
         });
     }

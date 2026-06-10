@@ -52,6 +52,8 @@ from app.controllers.admin import (
     SystemSettingLogClearHandler,
     # 智能问数
     AdminQAHandler,
+    # 词云
+    WordCloudApiHandler,
 )
 from app.models.db import init_db, get_connection
 from app.models.user import UserRepository
@@ -169,6 +171,8 @@ def make_app():
         (r"/admin/session/delete", SessionDeleteHandler),
         # 智能问数（iframe内嵌）
         (r"/admin/qa", AdminQAHandler),
+        # 词云
+        (r"/admin/big-screen/wordcloud", WordCloudApiHandler),
         # 系统设置
         (r"/admin/settings", SystemSettingHandler),
         (r"/admin/settings/api", SystemSettingApiHandler),
@@ -327,7 +331,7 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
     app = make_app()
     server = HTTPServer(app)
-    server.listen(10086)
+    server.listen(35001)
     DeepCollectTask.init_db()
-    print("Server Start At http://127.0.0.1:10086")
+    print("Server Start At http://127.0.0.1:35001")
     tornado.ioloop.IOLoop.current().start()

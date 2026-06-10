@@ -138,10 +138,10 @@ function escapeHtml(str) {
 
 function getFilterParams() {
     return {
-        username: $('#filterUser').val().trim(),
-        keyword: $('#filterKeyword').val().trim(),
-        date_from: $('#filterDateFrom').val(),
-        date_to: $('#filterDateTo').val()
+        username: layui.$('#filterUser').val(),
+        keyword: layui.$('#filterKeyword').val(),
+        date_from: layui.$('#filterDateFrom').val(),
+        date_to: layui.$('#filterDateTo').val()
     };
 }
 
@@ -150,15 +150,15 @@ function doSearch() {
 }
 
 function resetFilter() {
-    $('#filterUser').val('');
-    $('#filterKeyword').val('');
-    $('#filterDateFrom').val('');
-    $('#filterDateTo').val('');
+    layui.$('#filterUser').val('');
+    layui.$('#filterKeyword').val('');
+    layui.$('#filterDateFrom').val('');
+    layui.$('#filterDateTo').val('');
     doSearch();
 }
 
 function showDetail(id) {
-    $.get('/admin/conversations/api?page=1&limit=9999', function(res){
+    layui.$.get('/admin/conversations/api?page=1&limit=9999', function(res){
         if(res.code === 0) {
             var item = res.data.find(function(d){return d.id == id;});
             if(item) {

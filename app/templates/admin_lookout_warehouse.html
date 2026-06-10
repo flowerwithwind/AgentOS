@@ -309,10 +309,11 @@ layui.use(['table', 'layer', 'form'], function(){
 
 function getFilterParams(){
     var params = {};
-    var sid = $('#filterSource').val();
-    var kw = $('#filterKeyword').val().trim();
-    var df = $('#filterDateFrom').val();
-    var dt = $('#filterDateTo').val();
+    var sid = layui.$('#filterSource').val();
+    var kw = layui.$('#filterKeyword').val();
+    if(kw) kw = kw.trim();
+    var df = layui.$('#filterDateFrom').val();
+    var dt = layui.$('#filterDateTo').val();
     if(sid) params.source_id = sid;
     if(kw) params.keyword = kw;
     if(df) params.date_from = df;
@@ -322,12 +323,12 @@ function getFilterParams(){
 
 function updateSelectedInfo(){
     var cnt = Object.keys(selectedIds).length;
-    $('#selInfo').text('已选 ' + cnt + ' 条');
-    $('#btnDeepCollect').prop('disabled', cnt === 0);
+    layui.$('#selInfo').text('已选 ' + cnt + ' 条');
+    layui.$('#btnDeepCollect').prop('disabled', cnt === 0);
     if(cnt === 0){
-        $('#btnDeepCollect').addClass('layui-btn-disabled');
+        layui.$('#btnDeepCollect').addClass('layui-btn-disabled');
     } else {
-        $('#btnDeepCollect').removeClass('layui-btn-disabled');
+        layui.$('#btnDeepCollect').removeClass('layui-btn-disabled');
     }
 }
 
