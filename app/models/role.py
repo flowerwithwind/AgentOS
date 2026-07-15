@@ -124,6 +124,11 @@ class RoleRepository:
                 )
 
     @staticmethod
+    def get_permissions_for_role(role_id: int) -> set:
+        """获取角色的权限集合（兼容新权限系统）"""
+        return set(RoleRepository.get_permissions(role_id))
+
+    @staticmethod
     def get_menus_for_role(role_id: int):
         """获取角色可见的菜单功能（用于动态菜单渲染）"""
         with get_connection() as conn:

@@ -79,7 +79,8 @@ html, body {
 
 /* 右侧登录卡片 */
 .login-card-wrapper {
-    width: 480px;
+    width: 100%;
+    max-width: 480px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -218,12 +219,14 @@ html, body {
 @media (max-width: 900px) {
     .login-wrapper {
         flex-direction: column;
+        overflow-y: auto;
     }
 
     .login-brand {
         padding: 40px 32px 20px;
         align-items: center;
         text-align: center;
+        flex: none;
     }
 
     .login-brand .logo-icon {

@@ -5,11 +5,83 @@
 - @authenticated
 """
 import json
+import time
+import functools
 
 import tornado.web
 
+from app.utils.response import success, error
+
+
+def api_authenticated(method):
+    """API 路由专用认证装饰器，返回 JSON 而非重定向"""
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        if not self.get_current_user():
+            self.set_status(401)
+            self.write(error(401, "未认证，请先登录"))
+            return
+        return method(self, *args, **kwargs)
+    return wrapper
+
 
 class BaseHandler(tornado.web.RequestHandler):
+
+    def prepare(self):
+        """API 路由：未认证直接返回 JSON"""
+        if self.request.path.startswith("/api/"):
+            if not self.get_current_user():
+                # 跳过不需要认证的 API 路由
+                skip_auth = ["/api/auth/login", "/api/auth/register", "/api/auth/oauth/", "/api/settings"]
+                if not any(self.request.path.startswith(p) for p in skip_auth):
+                    self.set_status(401)
+                    self.write(error(401, "未认证，请先登录"))
+                    self.finish()
+                    return
+        super().prepare()
+
+    def set_default_headers(self):
+        """CORS 头设置"""
+        origin = self.request.headers.get("Origin", "")
+        if origin:
+            self.set_header("Access-Control-Allow-Origin", origin)
+        else:
+            self.set_header("Access-Control-Allow-Origin", "http://localhost:5173")
+        self.set_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+        self.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
+        self.set_header("Access-Control-Allow-Credentials", "true")
+        self.set_header("Access-Control-Max-Age", "3600")
+
+    def check_xsrf_cookie(self):
+        """API 路由跳过 XSRF 校验"""
+        if self.request.path.startswith("/api/"):
+            return
+        super().check_xsrf_cookie()
+
+    def get_login_url(self):
+        """API 路由：未认证返回 JSON 而非重定向"""
+        if self.request.path.startswith("/api/"):
+            return ""
+        return super().get_login_url()
+
+    def _handle_request_exception(self, exc):
+        """API 路由：异常返回 JSON"""
+        if self.request.path.startswith("/api/"):
+            if hasattr(exc, "status_code"):
+                code = exc.status_code
+            else:
+                code = 500
+            self.set_status(code)
+            self.write({"code": code, "message": str(exc), "data": None, "timestamp": int(time.time())})
+            self.finish()
+            return
+        super()._handle_request_exception(exc)
+
+    def options(self):
+        """CORS 预检请求"""
+        self.set_status(204)
+        self.finish()
+
     def get_current_user(self):
         username = self.get_secure_cookie("username")
         if not username:

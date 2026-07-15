@@ -1,0 +1,16 @@
+{
+  "name": "xhagentos",
+  "version": "1.0.0",
+  "description": "基于AI的智能瞭望与智能问数系统 - 西华vibeCoding团队-陈晓乐-向党-陈陆雷-赵海蓺-廖柯淞",
+  "main": "temp_test.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

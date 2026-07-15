@@ -25,42 +25,85 @@ from app.controllers.admin import (
     LookoutCollectHandler, LookoutCollectApiHandler,
     LookoutSaveRecordsHandler,
     LookoutWarehouseHandler, LookoutWarehouseApiHandler,
-    # 深度采集
     DeepCollectApiHandler, DeepCollectProgressHandler, DeepCollectContentHandler,
-    # 对话管理
     ConversationPageHandler, ConversationListApiHandler,
     ConversationExportHandler,
-    # 接口管理
     ApiTokenListHandler, ApiTokenListApiHandler,
     ApiTokenCreateHandler, ApiTokenDeleteHandler,
-    # 数智大屏
     BigScreenHandler, BigScreenApiHandler,
-    # 技能管理
     SkillListHandler, SkillListApiHandler, SkillAllApiHandler,
     SkillCreateHandler, SkillEditHandler, SkillDeleteHandler,
-    # 数字员工管理
     DigitalEmployeeListHandler, DigitalEmployeeListApiHandler,
     DigitalEmployeeCreateHandler, DigitalEmployeeEditHandler,
     DigitalEmployeeDeleteHandler, DigitalEmployeeToggleStatusHandler,
     DigitalEmployeeGetByIdApiHandler, DigitalEmployeeByNameApiHandler,
-    # 会话管理
     SessionListHandler, SessionListApiHandler,
     SessionMessagesApiHandler, SessionDeleteHandler,
-    # 系统设置
     SystemSettingHandler, SystemSettingApiHandler,
     SystemSettingLogoUploadHandler, SystemSettingLogApiHandler,
     SystemSettingLogClearHandler,
-    # 智能问数
     AdminQAHandler,
-    # 词云
     WordCloudApiHandler,
-    # 数据库切换
     DbSwitchHandler, DbSwitchApiHandler, DbSwitchTestApiHandler,
+)
+# ====== 新 RESTful API 控制器 ======
+from app.controllers.api_auth import (
+    LoginApiHandler, RegisterApiHandler, MeApiHandler, LogoutApiHandler,
+)
+from app.controllers.oauth import (
+    OAuthLoginHandler, OAuthCallbackHandler,
+)
+from app.controllers.api_dashboard import (
+    DashboardStatsApiHandler as ApiDashboardStatsApiHandler,
+    MenuApiHandler as ApiMenuApiHandler,
+)
+from app.controllers.api_models import (
+    ModelListApiHandler as ApiModelListApiHandler,
+    ModelCreateApiHandler, ModelUpdateApiHandler, ModelDeleteApiHandler,
+    ModelSetDefaultApiHandler as ApiModelSetDefaultApiHandler,
+    ModelTestApiHandler, ModelUsageApiHandler,
+)
+from app.controllers.api_lookout import (
+    SourceListApiHandler, SourceCreateApiHandler, SourceUpdateApiHandler,
+    SourceDeleteApiHandler, CollectApiHandler, WarehouseListApiHandler,
+    WarehouseDeleteApiHandler, DeepCollectApiHandler, DeepCollectProgressApiHandler,
+)
+from app.controllers.api_skills import (
+    SkillListApiHandler as ApiSkillListApiHandler,
+    SkillAllApiHandler as ApiSkillAllApiHandler,
+    SkillCreateApiHandler, SkillUpdateApiHandler, SkillDeleteApiHandler,
+)
+from app.controllers.api_digital_employees import (
+    DigitalEmployeeListApiHandler as ApiDigitalEmployeeListApiHandler,
+    DigitalEmployeeCreateApiHandler, DigitalEmployeeUpdateApiHandler,
+    DigitalEmployeeDeleteApiHandler as ApiDigitalEmployeeDeleteApiHandler,
+    DigitalEmployeeGetApiHandler,
+)
+from app.controllers.api_system import (
+    UserListApiHandler as ApiUserListApiHandler,
+    UserCreateApiHandler as ApiUserCreateApiHandler,
+    UserUpdateApiHandler, UserDeleteApiHandler as ApiUserDeleteApiHandler,
+    RoleListApiHandler as ApiRoleListApiHandler,
+    RoleCreateApiHandler as ApiRoleCreateApiHandler,
+    RoleDeleteApiHandler as ApiRoleDeleteApiHandler,
+    PermissionRolesApiHandler as ApiPermissionRolesApiHandler,
+    PermissionFunctionsApiHandler as ApiPermissionFunctionsApiHandler,
+    PermissionSaveApiHandler as ApiPermissionSaveApiHandler,
+    ConversationListApiHandler as ApiConversationListApiHandler,
+    ConversationExportApiHandler as ApiConversationExportApiHandler,
+    SessionListApiHandler as ApiSessionListApiHandler,
+    SessionMessagesApiHandler as ApiSessionMessagesApiHandler,
+    SessionDeleteApiHandler as ApiSessionDeleteApiHandler,
+    ApiTokenListApiHandler as ApiApiTokenListApiHandler,
+    ApiTokenCreateApiHandler as ApiApiTokenCreateApiHandler,
+    ApiTokenDeleteApiHandler as ApiApiTokenDeleteApiHandler,
+    SettingGetApiHandler, SettingUpdateApiHandler, SettingLogoUploadApiHandler,
+    BigScreenApiHandler as ApiBigScreenApiHandler,
 )
 from app.models.db import init_db, get_connection
 from app.models.user import UserRepository
-# look 模块不再需要 TaskScheduler（已移除深度采集定时任务）
 from app.models.lookout import DeepCollectTask
+from app.services.oauth_service import ensure_oauth_tables
 
 
 def make_app():
@@ -70,8 +113,8 @@ def make_app():
         template_path=os.path.join(base_dir, "app", "templates"),
         static_path=os.path.join(base_dir, "app", "static"),
         cookie_secret="demo-cookie-secrete-change-me",
-        login_url="/auth/login",
-        xsrf_cookies=True,
+        login_url="http://localhost:5173",
+        xsrf_cookies=False,
         debug=True,
         auto_reload=True
     )
@@ -187,6 +230,77 @@ def make_app():
         (r"/admin/db-switch/test", DbSwitchTestApiHandler),
         # 用户侧接口
         (r"/api/digital_employee/by_name", DigitalEmployeeByNameApiHandler),
+        # ====== 新 RESTful API 路由 ======
+        # 认证
+        (r"/api/auth/login", LoginApiHandler),
+        (r"/api/auth/register", RegisterApiHandler),
+        (r"/api/auth/logout", LogoutApiHandler),
+        (r"/api/auth/me", MeApiHandler),
+        # OAuth 第三方登录
+        (r"/api/auth/oauth/(github|qq)/login", OAuthLoginHandler),
+        (r"/api/auth/oauth/(github|qq)/callback", OAuthCallbackHandler),
+        # 仪表盘
+        (r"/api/dashboard/stats", ApiDashboardStatsApiHandler),
+        (r"/api/menus", ApiMenuApiHandler),
+        # 用户管理
+        (r"/api/users", ApiUserListApiHandler),
+        (r"/api/users/create", ApiUserCreateApiHandler),
+        (r"/api/users/(\d+)", UserUpdateApiHandler),
+        (r"/api/users/(\d+)/delete", ApiUserDeleteApiHandler),
+        # 模型管理
+        (r"/api/models", ApiModelListApiHandler),
+        (r"/api/models/create", ModelCreateApiHandler),
+        (r"/api/models/(\d+)", ModelUpdateApiHandler),
+        (r"/api/models/(\d+)/delete", ModelDeleteApiHandler),
+        (r"/api/models/(\d+)/default", ApiModelSetDefaultApiHandler),
+        (r"/api/models/test", ModelTestApiHandler),
+        (r"/api/models/(\d+)/usage", ModelUsageApiHandler),
+        # 技能管理
+        (r"/api/skills", ApiSkillListApiHandler),
+        (r"/api/skills/all", ApiSkillAllApiHandler),
+        (r"/api/skills/create", SkillCreateApiHandler),
+        (r"/api/skills/(\d+)", SkillUpdateApiHandler),
+        (r"/api/skills/(\d+)/delete", SkillDeleteApiHandler),
+        # 数字员工
+        (r"/api/digital-employees", ApiDigitalEmployeeListApiHandler),
+        (r"/api/digital-employees/create", DigitalEmployeeCreateApiHandler),
+        (r"/api/digital-employees/(\d+)", DigitalEmployeeUpdateApiHandler),
+        (r"/api/digital-employees/(\d+)/delete", ApiDigitalEmployeeDeleteApiHandler),
+        (r"/api/digital-employees/(\d+)/detail", DigitalEmployeeGetApiHandler),
+        # 瞭望采集
+        (r"/api/lookout/sources", SourceListApiHandler),
+        (r"/api/lookout/sources/create", SourceCreateApiHandler),
+        (r"/api/lookout/sources/(\d+)", SourceUpdateApiHandler),
+        (r"/api/lookout/sources/(\d+)/delete", SourceDeleteApiHandler),
+        (r"/api/lookout/collect", CollectApiHandler),
+        (r"/api/lookout/warehouse", WarehouseListApiHandler),
+        (r"/api/lookout/warehouse/(\d+)/delete", WarehouseDeleteApiHandler),
+        (r"/api/lookout/deep-collect", DeepCollectApiHandler),
+        (r"/api/lookout/deep-collect/progress", DeepCollectProgressApiHandler),
+        # 角色权限
+        (r"/api/roles", ApiRoleListApiHandler),
+        (r"/api/roles/create", ApiRoleCreateApiHandler),
+        (r"/api/roles/(\d+)/delete", ApiRoleDeleteApiHandler),
+        (r"/api/permissions/roles", ApiPermissionRolesApiHandler),
+        (r"/api/permissions/functions", ApiPermissionFunctionsApiHandler),
+        (r"/api/permissions/save", ApiPermissionSaveApiHandler),
+        # 对话管理
+        (r"/api/conversations", ApiConversationListApiHandler),
+        (r"/api/conversations/export", ApiConversationExportApiHandler),
+        # 会话管理
+        (r"/api/sessions", ApiSessionListApiHandler),
+        (r"/api/sessions/(\d+)/messages", ApiSessionMessagesApiHandler),
+        (r"/api/sessions/(\d+)/delete", ApiSessionDeleteApiHandler),
+        # API Token
+        (r"/api/tokens", ApiApiTokenListApiHandler),
+        (r"/api/tokens/create", ApiApiTokenCreateApiHandler),
+        (r"/api/tokens/(\d+)/delete", ApiApiTokenDeleteApiHandler),
+        # 系统设置
+        (r"/api/settings", SettingGetApiHandler),
+        (r"/api/settings/update", SettingUpdateApiHandler),
+        (r"/api/settings/logo", SettingLogoUploadApiHandler),
+        # 数智大屏
+        (r"/api/bigscreen", ApiBigScreenApiHandler),
     ], **settings)
 
 
@@ -210,6 +324,7 @@ def migrate_db():
 def seed_data():
     """种子数据：默认角色 + 默认功能 + 默认管理员"""
     migrate_db()
+    ensure_oauth_tables()
 
     with get_connection() as conn:
         # 创建默认角色
