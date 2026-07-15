@@ -44,3 +44,30 @@ node_modules/
 
 # Logs
 *.log
+
+# Qoder
+.qoder*/
+
+# Build artifacts
+docs/prototype/dist/
+
+# Embedded repos
+团队官网/
+.workbuddy/
+
+# Screenshots (browser review artifacts)
+01_*.png
+01b_*.png
+01c_*.png
+02_*.png
+03_*.png
+03b_*.png
+04_*.png
+05_*.png
+05b_*.png
+06_*.png
+06b_*.png
+07_*.png
+08_*.png
+09_*.png
+09b_*.png
