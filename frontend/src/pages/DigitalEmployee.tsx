@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Table, Button, Modal, Form, Input, Switch, Select, Tag, Space, message, Popconfirm, Typography, Spin } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, RobotOutlined } from "@ant-design/icons";
 import { getDigitalEmployees, createDigitalEmployee, updateDigitalEmployee, deleteDigitalEmployee } from "../services/digitalEmployees";
 
 const DigitalEmployee = () => {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState(null);
+  const [editingRecord, setEditingRecord] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
 
@@ -40,8 +40,8 @@ const DigitalEmployee = () => {
       setEditingRecord(null);
       form.resetFields();
       fetchData();
-    } catch(e) {
-      if (e.message) message.error("操作失败");
+    } catch(e: any) {
+      if (e?.message) message.error("操作失败");
     } finally {
       setSaving(false);
     }

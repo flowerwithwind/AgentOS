@@ -1,3 +1,176 @@
+"""
+XHAgentOS Flask 应用入口（开发模式）
+
+使用 Flask 内置服务器 + debug 模式。
+生产环境请用 wsgi.py + waitress。
+"""
+import os
+import logging
+
+from app.factory import create_app
+from app.models.db import init_db, get_connection
+from app.models.user import UserRepository
+from app.models.lookout import DeepCollectTask
+from app.services.oauth_service import ensure_oauth_tables
+
+
+def migrate_db():
+    """迁移：为旧版 users 表添加 role_id 列"""
+    with get_connection() as conn:
+        try:
+            conn.execute("ALTER TABLE users ADD COLUMN role_id INTEGER DEFAULT 1")
+        except Exception:
+            pass
+        for sql in (
+            "ALTER TABLE user_sessions ADD COLUMN mode TEXT DEFAULT 'chat'",
+            "ALTER TABLE user_sessions ADD COLUMN employee_id INTEGER",
+        ):
+            try:
+                conn.execute(sql)
+            except Exception:
+                pass
+
+
+def seed_data():
+    """种子数据：默认角色 + 默认功能 + 默认管理员"""
+    migrate_db()
+    ensure_oauth_tables()
+
+    with get_connection() as conn:
+        # 创建默认角色
+        roles = [(1, "超级管理员", 1), (2, "普通用户", 1)]
+        for rid, rname, rsystem in roles:
+            conn.execute(
+                "INSERT OR IGNORE INTO roles (id, name, is_system) VALUES (?, ?, ?)",
+                (rid, rname, rsystem),
+            )
+
+        # 创建默认功能
+        funcs = [
+            (20, "智能问数", "layui-icon-dialogue", "/user/chat", 0, 0, 1),
+            (1, "后台首页", "layui-icon-home", "/admin/dashboard", 0, 1, 1),
+            (2, "系统管理", "layui-icon-set", "", 0, 2, 1),
+            (3, "用户管理", "layui-icon-user", "/admin/users", 2, 1, 1),
+            (5, "角色管理", "layui-icon-auz", "/admin/roles", 2, 2, 1),
+            (4, "功能管理", "layui-icon-set", "/admin/functions", 2, 3, 1),
+            (6, "权限管理", "layui-icon-auz", "/admin/permissions", 2, 4, 1),
+            (12, "接口管理", "layui-icon-component", "/admin/api-tokens", 2, 5, 1),
+            (7, "AI 模型", "layui-icon-engine", "/admin/models", 0, 3, 1),
+            (8, "瞭望管理", "layui-icon-app", "", 0, 4, 1),
+            (9, "瞭望源管理", "layui-icon-set", "/admin/lookout/sources", 8, 1, 1),
+            (10, "瞭望采集", "layui-icon-search", "/admin/lookout/collect", 8, 2, 1),
+            (11, "数据仓库", "layui-icon-list", "/admin/lookout/warehouse", 8, 3, 1),
+            (16, "数字员工", "layui-icon-username", "", 0, 5, 1),
+            (18, "员工管理", "layui-icon-user", "/admin/digital_employee", 16, 1, 1),
+            (17, "技能管理", "layui-icon-diamond", "/admin/skill", 16, 2, 1),
+            (14, "数据服务", "layui-icon-chart", "", 0, 6, 1),
+            (13, "数智大屏", "layui-icon-screen", "/admin/big-screen", 14, 1, 1),
+            (15, "对话记录", "layui-icon-dialogue", "/admin/conversations", 14, 2, 1),
+            (19, "会话管理", "layui-icon-log", "/admin/session", 14, 3, 1),
+            (21, "系统设置", "layui-icon-set", "/admin/settings", 2, 6, 1),
+            (22, "数据库切换", "layui-icon-engine", "/admin/db-switch", 2, 7, 1),
+        ]
+        for fid, fname, ficon, furl, fparent, fsort, fmenu in funcs:
+            conn.execute(
+                "INSERT OR IGNORE INTO functions (id, name, icon, url, parent_id, sort_order, is_menu) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (fid, fname, ficon, furl, fparent, fsort, fmenu),
+            )
+
+        # 超级管理员角色（role_id=1）分配所有功能权限
+        for fid, _, _, _, _, _, _ in funcs:
+            conn.execute(
+                "INSERT OR IGNORE INTO role_permissions (role_id, function_id) VALUES (1, ?)",
+                (fid,),
+            )
+
+        # 普通用户：后台首页 + 智能问数
+        for fid in (1, 20):
+            conn.execute(
+                "INSERT OR IGNORE INTO role_permissions (role_id, function_id) VALUES (2, ?)",
+                (fid,),
+            )
+
+    # 兼容旧库：补充智能问数菜单
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO functions (id, name, icon, url, parent_id, sort_order, is_menu) "
+            "VALUES (20, '智能问数', 'layui-icon-dialogue', '/user/chat', 0, 0, 1)"
+        )
+        for role_id in (1, 2):
+            conn.execute(
+                "INSERT OR IGNORE INTO role_permissions (role_id, function_id) VALUES (?, 20)",
+                (role_id,),
+            )
+
+    # 创建 admin 管理员
+    user = UserRepository.get_user_by_username("admin")
+    if not user:
+        UserRepository.create_user("admin", "admin123", role_id=1)
+        print(">>> 已创建默认管理员: admin / admin123 (超级管理员)")
+    else:
+        with get_connection() as conn:
+            conn.execute("UPDATE users SET role_id = 1 WHERE username = 'admin'")
+
+    # 创建示例模型
+    with get_connection() as conn:
+        cnt = conn.execute("SELECT COUNT(*) AS cnt FROM models").fetchone()["cnt"]
+        if cnt == 0:
+            conn.execute(
+                "INSERT INTO models (name, provider, api_key, base_url, model_name, is_default, status) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    "DeepSeek V4",
+                    "openai",
+                    "sk-25369530ebd443cfa5cddfde5b819b2b",
+                    "https://api.deepseek.com/v1",
+                    "deepseek-v4-flash",
+                    1,
+                    1,
+                ),
+            )
+            print(">>> 已创建示例模型: DeepSeek V4")
+
+    # 创建默认瞭望源
+    with get_connection() as conn:
+        cnt = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM lookout_sources"
+        ).fetchone()["cnt"]
+        if cnt == 0:
+            default_sources = [
+                ("百度新闻", "https://www.baidu.com/s?tn=news&rtt=1&bsst=1&wd={}", "pn", 10, "{}"),
+                ("搜狗新闻", "https://news.sogou.com/news?query={}", "page", 10, "{}"),
+            ]
+            for name, url, pn, ps, ph in default_sources:
+                conn.execute(
+                    "INSERT INTO lookout_sources (name, url_template, pn_param, page_size, keyword_placeholder) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (name, url, pn, ps, ph),
+                )
+            print(">>> 已创建默认瞭望源: 百度新闻、搜狗新闻")
+
+
+if __name__ == "__main__":
+    init_db()
+    seed_data()
+    DeepCollectTask.init_db()
+
+    # 配置日志
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "app.log")
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(log_file, encoding="utf-8"),
+            logging.StreamHandler(),
+        ],
+    )
+
+    app = create_app()
+    print(">>> XHAgentOS Flask 服务启动于 http://0.0.0.0:35001")
+    app.run(host="0.0.0.0", port=35001, debug=True)
 import os
 import sqlite3
 import logging

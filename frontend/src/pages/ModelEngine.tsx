@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Card, Row, Col, Tag, Button, Modal, Input, Select, Switch,
   Typography, Space, message, Tooltip, Pagination, Spin,
@@ -21,10 +21,10 @@ const providerMap = {
 };
 
 const ModelEngine = () => {
-  const [models, setModels] = useState([]);
+  const [models, setModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingModel, setEditingModel] = useState(null);
+  const [editingModel, setEditingModel] = useState<any>(null);
   const [searchText, setSearchText] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [testInput, setTestInput] = useState("");
@@ -45,7 +45,7 @@ const ModelEngine = () => {
       const res = await getModels({ page: currentPage, pageSize });
       setModels(res.items || []);
       setPageTotal(res.total || 0);
-    } catch(e) {
+    } catch(e: any) {
       console.error("Fetch models failed:", e);
     } finally {
       setLoading(false);
@@ -64,7 +64,7 @@ const ModelEngine = () => {
       await updateModel(id, { status: currentStatus === 1 ? 0 : 1 });
       message.success("状态已更新");
       fetchModels();
-    } catch(e) {
+    } catch(e: any) {
       message.error("更新状态失败");
     }
   };
@@ -74,7 +74,7 @@ const ModelEngine = () => {
       await setDefaultModel(id);
       message.success("已设为默认模型");
       fetchModels();
-    } catch(e) {
+    } catch(e: any) {
       message.error("设置默认模型失败");
     }
   };
@@ -84,7 +84,7 @@ const ModelEngine = () => {
       await deleteModelApi(id);
       message.success("已删除模型");
       fetchModels();
-    } catch(e) {
+    } catch(e: any) {
       message.error("删除模型失败");
     }
   };
@@ -103,7 +103,7 @@ const ModelEngine = () => {
       var res = await testModel({ modelId: enabledModels[0].id, message: testInput });
       setTestOutput(res.reply || "无响应");
       fetchModels();
-    } catch(e) {
+    } catch(e: any) {
       setTestOutput("调用失败: " + (e.message || "未知错误"));
     } finally {
       setTesting(false);
@@ -156,7 +156,7 @@ const ModelEngine = () => {
       }
       setModalOpen(false);
       fetchModels();
-    } catch(e) {
+    } catch(e: any) {
       message.error("操作失败");
     } finally {
       setSaving(false);

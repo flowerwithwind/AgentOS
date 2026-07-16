@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Avatar, Button, Modal, Input, Select, Switch, Tag, message, Tooltip, Spin,
 } from "antd";
@@ -14,14 +14,14 @@ const statusColors = { 正常: { bg: "#10b98122", color: "#10b981" }, 禁用: { 
 const PAGE_SIZE = 10;
 
 const UserManagement = () => {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null);
+  const [editingId, setEditingId] = useState<any>(null);
 
   const [formUsername, setFormUsername] = useState("");
   const [formEmail, setFormEmail] = useState("");

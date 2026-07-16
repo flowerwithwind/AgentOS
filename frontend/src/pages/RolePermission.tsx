@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Button, Modal, Input, message, Tree, Tag, Spin } from "antd";
 import {
   PlusOutlined, EditOutlined, DeleteOutlined,
@@ -17,12 +17,12 @@ const treeData = [
 const cardBase = { background: "#0f172a", borderRadius: 10, border: "1px solid #334155", padding: 16, cursor: "pointer" };
 
 const RolePermission = () => {
-  const [roles, setRoles] = useState([]);
+  const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedRole, setSelectedRole] = useState(null);
-  const [checkedPerms, setCheckedPerms] = useState([]);
+  const [selectedRole, setSelectedRole] = useState<any>(null);
+  const [checkedPerms, setCheckedPerms] = useState<any[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState(null);
+  const [editingRole, setEditingRole] = useState<any>(null);
   const [roleName, setRoleName] = useState("");
   const [savingPerms, setSavingPerms] = useState(false);
 
@@ -43,7 +43,7 @@ const RolePermission = () => {
     setSelectedRole(role);
     try {
       var res = await getPermissionFunctions(role.id);
-      var keys = [];
+      var keys: any[] = [];
       function collectKeys(nodes) {
         for (var i = 0; i < nodes.length; i++) {
           if (nodes[i].checked) keys.push(nodes[i].key || String(nodes[i].id));
@@ -146,7 +146,7 @@ const RolePermission = () => {
             <div style={{ fontSize: 14, fontWeight: 500, color: "#f1f5f9", marginBottom: 12 }}>功能权限</div>
             <div style={{ flex: 1, overflowY: "auto", background: "#0f172a", borderRadius: 8, border: "1px solid #334155", padding: 16 }}>
               <Tree checkable defaultExpandAll treeData={treeData} checkedKeys={checkedPerms}
-                onCheck={function(keys) { setCheckedPerms(keys); }}
+                onCheck={function(keys) { setCheckedPerms(Array.isArray(keys) ? keys : keys.checked); }}
                 style={{ color: "#f1f5f9" }} />
             </div>
             <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end", gap: 12 }}>

@@ -3,7 +3,7 @@ import { message } from 'antd';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
-const apiClient = axios.create({
+const rawClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
@@ -11,7 +11,7 @@ const apiClient = axios.create({
 });
 
 // Request interceptor: inject auth token
-apiClient.interceptors.request.use(
+rawClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('xhagentos_token');
     if (token) {
@@ -22,8 +22,8 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// Response interceptor: unified error handling
-apiClient.interceptors.response.use(
+// Response interceptor: unwrap business payload so callers get `data` directly
+rawClient.interceptors.response.use(
   (response) => {
     const { code, message: msg, data } = response.data;
     if (code === 200 || code === 0) {
@@ -57,5 +57,16 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   },
 );
+
+/** Axios client whose interceptors return unwrapped business data (not AxiosResponse). */
+export interface ApiClient {
+  get<T = any>(url: string, config?: any): Promise<T>;
+  post<T = any>(url: string, data?: any, config?: any): Promise<T>;
+  put<T = any>(url: string, data?: any, config?: any): Promise<T>;
+  delete<T = any>(url: string, config?: any): Promise<T>;
+  patch<T = any>(url: string, data?: any, config?: any): Promise<T>;
+}
+
+const apiClient = rawClient as unknown as ApiClient;
 
 export default apiClient;

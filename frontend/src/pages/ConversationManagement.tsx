@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Table, Button, Input, Tag, message, Tooltip, Spin,
 } from "antd";
@@ -8,7 +8,7 @@ import {
 import { getConversations, exportConversations } from "../services/system";
 
 const ConversationManagement = () => {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -17,7 +17,7 @@ const ConversationManagement = () => {
 
   const fetchData = async () => {
     try {
-      var params = { page, pageSize: 10 };
+      var params: any = { page, pageSize: 10 };
       if (searchUser) params.username = searchUser;
       if (searchKeyword) params.keyword = searchKeyword;
       var res = await getConversations(params);

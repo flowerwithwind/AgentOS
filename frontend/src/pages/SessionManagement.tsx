@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Avatar, Button, Input, Select, Drawer, Tag, message, Tooltip, Spin,
 } from "antd";
@@ -11,19 +11,19 @@ const statusColor = { 活跃: { bg: "#10b98122", color: "#10b981" }, 已结束: 
 const PAGE_SIZE = 10;
 
 const SessionManagement = () => {
-  const [sessions, setSessions] = useState([]);
+  const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [userSearch, setUserSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeMessages, setActiveMessages] = useState([]);
-  const [activeSession, setActiveSession] = useState(null);
+  const [activeMessages, setActiveMessages] = useState<any[]>([]);
+  const [activeSession, setActiveSession] = useState<any>(null);
   const [msgLoading, setMsgLoading] = useState(false);
 
   const fetchSessions = async () => {
     try {
-      var params = { page: page, pageSize: PAGE_SIZE };
+      var params: any = { page: page, pageSize: PAGE_SIZE };
       if (userSearch) params.keyword = userSearch;
       var res = await getSessions(params);
       setSessions(res.items || []);

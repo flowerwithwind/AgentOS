@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Form, Input, Slider, Button, Modal, Upload, message, Tag, InputNumber, Spin } from "antd";
 import {
   SettingOutlined, BugOutlined, SafetyOutlined,
@@ -19,7 +19,7 @@ const tabs = [
 
 const presetColors = ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
-const FormRow = function({ label, desc, children }) { return (
+const FormRow = function({ label, desc, children }: { label: string; desc?: string; children?: any }) { return (
   <div style={{ marginBottom: 24 }}>
     <div style={{ fontSize: 14, fontWeight: 500, color: "#f1f5f9", marginBottom: 4 }}>{label}</div>
     {desc && <div style={{ fontSize: 12, color: "#64748b", marginBottom: 8 }}>{desc}</div>}
@@ -27,7 +27,7 @@ const FormRow = function({ label, desc, children }) { return (
   </div>
 );};
 
-const SectionTitle = function({ title, desc }) { return (
+const SectionTitle = function({ title, desc }: { title: string; desc?: string }) { return (
   <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: "1px solid #334155" }}>
     <div style={{ fontSize: 18, fontWeight: 600, color: "#f1f5f9" }}>{title}</div>
     {desc && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{desc}</div>}
@@ -40,7 +40,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [themeColor, setThemeColor] = useState("#6366f1");
-  const [settingsData, setSettingsData] = useState({});
+  const [settingsData, setSettingsData] = useState<any>({});
 
   useEffect(function() {
     (async function() {
@@ -94,7 +94,11 @@ const Settings = () => {
             </FormRow>
             <FormRow label="Logo 上传" desc="建议尺寸 200x60px，支持 PNG/SVG 格式">
               <Upload.Dragger accept="image/*" maxCount={1} customRequest={async function(options) {
-                try { await uploadLogo(options.file); message.success("Logo 已上传"); } catch(e) { message.error("上传失败"); }
+                try {
+                  const file = options.file as File;
+                  await uploadLogo(file);
+                  message.success("Logo 已上传");
+                } catch(e) { message.error("上传失败"); }
               }} style={{ maxWidth: 400, background: "#0f172a", borderColor: "#334155" }}>
                 <p style={{ color: "#64748b", fontSize: 40, marginBottom: 8 }}><InboxOutlined /></p>
                 <p style={{ color: "#94a3b8" }}>点击或拖拽文件到此处上传</p>
@@ -143,7 +147,9 @@ const Settings = () => {
           <div>
             <SectionTitle title="数据管理" desc="管理数据存储和清理策略" />
             <FormRow label="数据保留天数">
-              <Slider name="retain_days" min={7} max={365} style={{ maxWidth: 400 }} marks={{ 7: "7天", 90: "90天", 180: "半年", 365: "1年" }} />
+              <Form.Item name="retain_days" noStyle>
+                <Slider min={7} max={365} style={{ maxWidth: 400 }} marks={{ 7: "7天", 90: "90天", 180: "半年", 365: "1年" }} />
+              </Form.Item>
             </FormRow>
             <FormRow label="数据清理">
               <Button danger onClick={function() { Modal.confirm({ title: "确认清理", content: "确定要清理所有过期数据吗？此操作不可恢复。", okText: "确认清理", okType: "danger", onOk: function() { message.success("清理完成"); } }); }}>一键清理过期数据</Button>

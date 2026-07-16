@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Button, Table, Switch, Tag, Modal, Input, message, Tooltip, Spin,
 } from "antd";
@@ -13,7 +13,7 @@ const statValueS = { fontSize: 28, fontWeight: 700, color: "#f1f5f9", marginTop:
 const statLabelS = { fontSize: 13, color: "#64748b" };
 
 const ApiTokenManagement = () => {
-  const [tokens, setTokens] = useState([]);
+  const [tokens, setTokens] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [tokenName, setTokenName] = useState("");
