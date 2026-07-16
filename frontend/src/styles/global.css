@@ -20,9 +20,27 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: var(--font-size-base, 0.875rem);
   background: var(--bg-primary);
   color: var(--text-primary);
+}
+
+/* App shell density follows fluid rem scale */
+.ant-layout-header {
+  height: auto !important;
+  min-height: 3.5rem;
+  line-height: 1.4 !important;
+  padding-inline: var(--spacing-md, 1rem) !important;
+}
+
+.ant-layout-sider {
+  font-size: var(--font-size-base, 0.875rem);
+}
+
+.ant-menu-item,
+.ant-menu-submenu-title {
+  font-size: inherit !important;
 }
 
 /* Ant Design dark overrides */
