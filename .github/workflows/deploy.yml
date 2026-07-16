@@ -2,7 +2,7 @@ name: Deploy XHAgentOS
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, develop]
   workflow_dispatch:
     inputs:
       skip_tests:
@@ -40,7 +40,7 @@ jobs:
     needs: [test]
     if: |
       always() &&
-      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') &&
       (needs.test.result == 'success' || needs.test.result == 'skipped')
     runs-on: ubuntu-latest
     env:
