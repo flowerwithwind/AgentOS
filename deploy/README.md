@@ -16,20 +16,20 @@
 ```bash
 sudo mkdir -p /opt/xhagentos
 sudo chown -R ubuntu:ubuntu /opt/xhagentos
-sudo ufw allow 8080/tcp
-sudo ufw allow 35001/tcp
+sudo ufw allow 18082/tcp
+sudo ufw allow 18002/tcp
 ```
 
 ## 访问
 
 | 服务 | 地址 |
 |------|------|
-| 前端 | `http://公网IP:8080/` |
-| 后端 | `http://公网IP:35001/` |
+| 前端 | `http://公网IP:18082/` |
+| 后端 | `http://公网IP:18002/` |
 
 ## 镜像
 
 - `${DOCKER_USERNAME}/xhagentos-backend:latest`
 - `${DOCKER_USERNAME}/xhagentos-frontend:latest`
 
-与 SmartQA（`:80` / `:8000`）、Code Review Agent（`:8001`）端口错开。
+三项目端口：SmartQA `18080/18000`，Code Review `18001`，本项目 `18082/18002`。

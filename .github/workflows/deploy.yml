@@ -105,8 +105,8 @@ jobs:
           cat > deploy-bundle/.env <<EOF
           DOCKER_USERNAME=${DOCKER_USERNAME}
           IMAGE_TAG=latest
-          HTTP_PORT=8080
-          BACKEND_PORT=35001
+          HTTP_PORT=18082
+          BACKEND_PORT=18002
           DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
           EOF
           sed -i 's/^[[:space:]]*//' deploy-bundle/.env
@@ -159,7 +159,7 @@ jobs:
             chmod +x remote-up.sh
             export DOCKER_PASSWORD="${REMOTE_DOCKER_PASS:-}"
             export APP_DIR=/opt/xhagentos
-            export HEALTH_URL=http://127.0.0.1:35001/
+            export HEALTH_URL=http://127.0.0.1:18002/
             ./remote-up.sh
             docker ps --filter name=xhagentos
 

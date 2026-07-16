@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_DIR="${APP_DIR:-/opt/xhagentos}"
-HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:35001/}"
+HEALTH_URL="${HEALTH_URL:-http://127.0.0.1:18002/}"
 cd "$APP_DIR"
 
 [[ -f docker-compose.yml ]] || { echo "missing compose"; ls -la; exit 1; }
