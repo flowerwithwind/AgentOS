@@ -1,0 +1,40 @@
+# XHAgentOS 生产编排
+# 部署目录: /opt/xhagentos
+# 前端默认 :8080（避免与 smartqa :80 冲突），后端 :35001
+
+services:
+  backend:
+    image: ${DOCKER_USERNAME}/xhagentos-backend:${IMAGE_TAG:-latest}
+    container_name: xhagentos-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-35001}:35001"
+    env_file:
+      - .env
+    environment:
+      - PORT=35001
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - FLASK_ENV=production
+    volumes:
+      - xh-data:/app/database
+      - xh-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:35001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  frontend:
+    image: ${DOCKER_USERNAME}/xhagentos-frontend:${IMAGE_TAG:-latest}
+    container_name: xhagentos-frontend
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    depends_on:
+      - backend
+
+volumes:
+  xh-data:
+  xh-logs:

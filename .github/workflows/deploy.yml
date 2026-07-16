@@ -1,0 +1,168 @@
+name: Deploy XHAgentOS
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "跳过测试"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+jobs:
+  test:
+    name: Test before deploy
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.skip_tests != 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: |
+          pip install -r requirements.txt
+          python -c "from app.factory import create_app; create_app()"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+  deploy:
+    name: Build push and remote deploy
+    needs: [test]
+    if: |
+      always() &&
+      (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
+      SERVER_USER: ${{ secrets.SERVER_USER }}
+      SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+      SERVER_PORT: ${{ secrets.SERVER_PORT }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require Docker Hub
+        if: env.DOCKER_USERNAME == '' || env.DOCKER_PASSWORD == ''
+        run: |
+          echo "::error::需要 DOCKER_USERNAME / DOCKER_PASSWORD"
+          exit 1
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+      - name: Push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/xhagentos-backend:latest
+            ${{ env.DOCKER_USERNAME }}/xhagentos-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.DOCKER_USERNAME }}/xhagentos-frontend:latest
+            ${{ env.DOCKER_USERNAME }}/xhagentos-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Require SSH
+        if: env.SERVER_HOST != '' && (env.SERVER_USER == '' || env.SERVER_PASSWORD == '')
+        run: exit 1
+
+      - name: Prepare bundle
+        if: env.SERVER_HOST != ''
+        run: |
+          set -euo pipefail
+          mkdir -p deploy-bundle
+          cp deploy/docker-compose.prod.yml deploy-bundle/docker-compose.yml
+          cp deploy/remote-up.sh deploy-bundle/remote-up.sh
+          chmod +x deploy-bundle/remote-up.sh
+          cat > deploy-bundle/.env <<EOF
+          DOCKER_USERNAME=${DOCKER_USERNAME}
+          IMAGE_TAG=latest
+          HTTP_PORT=8080
+          BACKEND_PORT=35001
+          DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+          EOF
+          sed -i 's/^[[:space:]]*//' deploy-bundle/.env
+          printf '%s' "${DOCKER_PASSWORD}" > deploy-bundle/.docker_password
+          tar -C deploy-bundle -czf deploy-bundle.tgz .
+
+      - name: Ensure remote dir
+        if: env.SERVER_HOST != ''
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          password: ${{ env.SERVER_PASSWORD }}
+          port: ${{ env.SERVER_PORT != '' && env.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            sudo mkdir -p /opt/xhagentos
+            sudo chown -R "$(id -un):$(id -gn)" /opt/xhagentos || true
+            mkdir -p /opt/xhagentos
+
+      - name: Upload
+        if: env.SERVER_HOST != ''
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          password: ${{ env.SERVER_PASSWORD }}
+          port: ${{ env.SERVER_PORT != '' && env.SERVER_PORT || 22 }}
+          source: "deploy-bundle.tgz"
+          target: "/opt/xhagentos"
+          overwrite: true
+
+      - name: Extract pull and start
+        if: env.SERVER_HOST != ''
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          REMOTE_DOCKER_PASS: ${{ env.DOCKER_PASSWORD }}
+        with:
+          host: ${{ env.SERVER_HOST }}
+          username: ${{ env.SERVER_USER }}
+          password: ${{ env.SERVER_PASSWORD }}
+          port: ${{ env.SERVER_PORT != '' && env.SERVER_PORT || 22 }}
+          envs: REMOTE_DOCKER_PASS
+          script_stop: true
+          command_timeout: 45m
+          script: |
+            set -euo pipefail
+            cd /opt/xhagentos
+            tar -xzf deploy-bundle.tgz && rm -f deploy-bundle.tgz
+            chmod +x remote-up.sh
+            export DOCKER_PASSWORD="${REMOTE_DOCKER_PASS:-}"
+            export APP_DIR=/opt/xhagentos
+            export HEALTH_URL=http://127.0.0.1:35001/
+            ./remote-up.sh
+            docker ps --filter name=xhagentos
+
+      - name: Hub only
+        if: env.SERVER_HOST == ''
+        run: echo "pushed xhagentos-backend/frontend to Docker Hub"
