@@ -29,14 +29,42 @@ def create_app():
     app.config["SESSION_COOKIE_NAME"] = "xhaos_session"
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    # Behind nginx on public frontend origin; keep cookie host-only for same-site Lax
+    app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
 
     # CORS —— 允许 React 前端跨域请求
     frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:5173")
+    public_base = os.environ.get("OAUTH_BASE_URL", "").rstrip("/")
+    cors_origins = [
+        frontend_url,
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://1.14.106.17:18082",
+    ]
+    if public_base:
+        cors_origins.append(public_base)
     CORS(
         app,
         supports_credentials=True,
-        origins=[frontend_url, "http://127.0.0.1:5173", "http://localhost:5173"],
+        origins=list(dict.fromkeys([o for o in cors_origins if o])),
     )
+
+    # Ensure core tables exist (production wsgi only called create_app, never init_db)
+    try:
+        from app.models.db import init_db
+        from app.services.oauth_service import ensure_oauth_tables
+
+        init_db()
+        ensure_oauth_tables()
+    except Exception as e:
+        # Log but do not prevent app boot; routes that need DB will surface clearer errors
+        import logging
+
+        logging.getLogger(__name__).error(f"DB bootstrap failed: {e}")
 
     # 健康检查
     @app.route("/api/health")

@@ -140,6 +140,15 @@ def find_or_create_local_user(provider: str, provider_user_id: str,
 # OAuth 配置读取
 # ============================================================================
 
+def _settings_get(key: str, default: str = "") -> str:
+    """Read system_settings safely (table may be missing before init_db)."""
+    try:
+        return SystemSettingsRepository.get(key, default) or default
+    except Exception as e:
+        logger.warning(f"system_settings get({key}) failed: {e}")
+        return default
+
+
 def get_oauth_config(provider: str) -> dict:
     """
     Resolve OAuth credentials.
@@ -163,9 +172,9 @@ def get_oauth_config(provider: str) -> dict:
 
     prefix = f"oauth_{provider}"
     return {
-        "client_id": env_id or SystemSettingsRepository.get(f"{prefix}_client_id", ""),
-        "client_secret": env_secret or SystemSettingsRepository.get(f"{prefix}_client_secret", ""),
-        "enabled": SystemSettingsRepository.get(f"{prefix}_enabled", "true"),
+        "client_id": env_id or _settings_get(f"{prefix}_client_id", ""),
+        "client_secret": env_secret or _settings_get(f"{prefix}_client_secret", ""),
+        "enabled": _settings_get(f"{prefix}_enabled", "true") or "true",
     }
 
 
