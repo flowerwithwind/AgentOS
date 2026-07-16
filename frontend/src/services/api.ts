@@ -30,30 +30,53 @@ rawClient.interceptors.response.use(
       return data;
     }
     message.error(msg || '请求失败');
-    return Promise.reject(new Error(msg));
+    return Promise.reject(new Error(msg || '请求失败'));
   },
   (error) => {
     if (error.response) {
-      switch (error.response.status) {
+      const status = error.response.status;
+      const body = error.response.data || {};
+      const serverMsg =
+        (typeof body === 'object' && (body.message || body.msg)) ||
+        error.message ||
+        `请求失败 (${status})`;
+      const url = String(error.config?.url || '');
+      const isAuthForm =
+        url.includes('/auth/login') || url.includes('/auth/register');
+
+      switch (status) {
         case 401:
-          localStorage.removeItem('xhagentos_token');
-          window.location.href = '/login';
+          // Login/register: show "用户名或密码错误" — do NOT silent-redirect
+          if (isAuthForm) {
+            message.error(serverMsg || '用户名或密码错误');
+          } else {
+            localStorage.removeItem('xhagentos_token');
+            message.error(serverMsg || '未认证，请先登录');
+            const path = window.location.pathname;
+            if (path !== '/' && path !== '/login') {
+              window.location.href = '/';
+            }
+          }
           break;
         case 403:
-          message.error('无权限访问');
+          message.error(serverMsg || '无权限访问');
           break;
         case 404:
-          message.error('请求的资源不存在');
+          message.error(serverMsg || '请求的资源不存在');
+          break;
+        case 422:
+        case 400:
+          message.error(serverMsg || '请求参数错误');
           break;
         case 429:
-          message.error('请求过于频繁，请稍后重试');
+          message.error(serverMsg || '请求过于频繁，请稍后重试');
           break;
         default:
-          message.error(`服务器错误 (${error.response.status})`);
+          message.error(serverMsg || `服务器错误 (${status})`);
       }
-    } else {
-      message.error('网络连接异常');
+      return Promise.reject(new Error(serverMsg));
     }
+    message.error('网络连接异常');
     return Promise.reject(error);
   },
 );

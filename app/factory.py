@@ -53,15 +53,12 @@ def create_app():
         origins=list(dict.fromkeys([o for o in cors_origins if o])),
     )
 
-    # Ensure core tables exist (production wsgi only called create_app, never init_db)
+    # Ensure tables + default admin (production wsgi never ran app.py seed_data)
     try:
-        from app.models.db import init_db
-        from app.services.oauth_service import ensure_oauth_tables
+        from app.bootstrap import seed_defaults
 
-        init_db()
-        ensure_oauth_tables()
+        seed_defaults()
     except Exception as e:
-        # Log but do not prevent app boot; routes that need DB will surface clearer errors
         import logging
 
         logging.getLogger(__name__).error(f"DB bootstrap failed: {e}")
