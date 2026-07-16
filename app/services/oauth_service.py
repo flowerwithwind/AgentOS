@@ -15,9 +15,28 @@ from app.models.system_settings import SystemSettingsRepository
 
 logger = logging.getLogger(__name__)
 
-BASE_URL = os.environ.get("OAUTH_BASE_URL", "http://127.0.0.1:35001")
-GITHUB_REDIRECT_URI = f"{BASE_URL}/api/auth/oauth/github/callback"
-QQ_REDIRECT_URI = f"{BASE_URL}/api/auth/oauth/qq/callback"
+
+def _oauth_base_url() -> str:
+    """Public site origin used to build OAuth callback URLs (prefer env)."""
+    return (
+        os.environ.get("OAUTH_BASE_URL")
+        or os.environ.get("PUBLIC_BASE_URL")
+        or "http://127.0.0.1:35001"
+    ).rstrip("/")
+
+
+def github_redirect_uri() -> str:
+    return f"{_oauth_base_url()}/api/auth/oauth/github/callback"
+
+
+def qq_redirect_uri() -> str:
+    return f"{_oauth_base_url()}/api/auth/oauth/qq/callback"
+
+
+# Back-compat aliases (resolved at import for logs/tests; prefer functions above)
+BASE_URL = _oauth_base_url()
+GITHUB_REDIRECT_URI = github_redirect_uri()
+QQ_REDIRECT_URI = qq_redirect_uri()
 
 
 # ============================================================================
@@ -122,13 +141,32 @@ def find_or_create_local_user(provider: str, provider_user_id: str,
 # ============================================================================
 
 def get_oauth_config(provider: str) -> dict:
+    """
+    Resolve OAuth credentials.
+
+    Priority: environment variables (GitHub Actions Secrets → deploy .env)
+              then system_settings DB (admin UI / manual seed).
+
+    Env names (must NOT start with GITHUB_ — reserved by Actions):
+      OAUTH_GITHUB_CLIENT_ID / OAUTH_GITHUB_CLIENT_SECRET
+      OAUTH_QQ_CLIENT_ID / OAUTH_QQ_CLIENT_SECRET
+    """
+    provider = (provider or "").lower()
+    if provider == "github":
+        env_id = os.environ.get("OAUTH_GITHUB_CLIENT_ID", "").strip()
+        env_secret = os.environ.get("OAUTH_GITHUB_CLIENT_SECRET", "").strip()
+    elif provider == "qq":
+        env_id = os.environ.get("OAUTH_QQ_CLIENT_ID", "").strip()
+        env_secret = os.environ.get("OAUTH_QQ_CLIENT_SECRET", "").strip()
+    else:
+        env_id, env_secret = "", ""
+
     prefix = f"oauth_{provider}"
-    cfg = {
-        "client_id": SystemSettingsRepository.get(f"{prefix}_client_id", ""),
-        "client_secret": SystemSettingsRepository.get(f"{prefix}_client_secret", ""),
+    return {
+        "client_id": env_id or SystemSettingsRepository.get(f"{prefix}_client_id", ""),
+        "client_secret": env_secret or SystemSettingsRepository.get(f"{prefix}_client_secret", ""),
         "enabled": SystemSettingsRepository.get(f"{prefix}_enabled", "true"),
     }
-    return cfg
 
 
 def is_simulated_mode(provider: str) -> bool:
@@ -177,7 +215,7 @@ def github_get_authorize_url(state: str) -> str:
         return f"/?error=请先配置 GitHub OAuth 的 Client ID 和 Client Secret"
     params = {
         "client_id": client_id,
-        "redirect_uri": GITHUB_REDIRECT_URI,
+        "redirect_uri": github_redirect_uri(),
         "scope": "read:user",
         "state": state,
     }
@@ -190,7 +228,7 @@ def github_exchange_code(code: str) -> dict:
         "client_id": config["client_id"],
         "client_secret": config["client_secret"],
         "code": code,
-        "redirect_uri": GITHUB_REDIRECT_URI,
+        "redirect_uri": github_redirect_uri(),
     }
     req = urllib.request.Request(
         GITHUB_TOKEN_URL,
@@ -269,7 +307,7 @@ def qq_get_authorize_url(state: str) -> str:
     params = {
         "response_type": "code",
         "client_id": app_id,
-        "redirect_uri": QQ_REDIRECT_URI,
+        "redirect_uri": qq_redirect_uri(),
         "scope": "get_user_info",
         "state": state,
     }
@@ -283,7 +321,7 @@ def qq_exchange_code(code: str) -> dict:
         "client_id": config["client_id"],
         "client_secret": config["client_secret"],
         "code": code,
-        "redirect_uri": QQ_REDIRECT_URI,
+        "redirect_uri": qq_redirect_uri(),
     }
     req = urllib.request.Request(
         f"{QQ_TOKEN_URL}?{urllib.parse.urlencode(data)}",

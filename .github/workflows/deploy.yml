@@ -51,6 +51,12 @@ jobs:
       SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
       SERVER_PORT: ${{ secrets.SERVER_PORT }}
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      # OAuth (names cannot start with GITHUB_ — reserved by GitHub Actions)
+      OAUTH_BASE_URL: ${{ secrets.OAUTH_BASE_URL }}
+      OAUTH_GITHUB_CLIENT_ID: ${{ secrets.OAUTH_GITHUB_CLIENT_ID }}
+      OAUTH_GITHUB_CLIENT_SECRET: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
+      OAUTH_QQ_CLIENT_ID: ${{ secrets.OAUTH_QQ_CLIENT_ID }}
+      OAUTH_QQ_CLIENT_SECRET: ${{ secrets.OAUTH_QQ_CLIENT_SECRET }}
 
     steps:
       - uses: actions/checkout@v4
@@ -108,8 +114,16 @@ jobs:
           HTTP_PORT=18082
           BACKEND_PORT=18002
           DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+          OAUTH_BASE_URL=${OAUTH_BASE_URL:-http://1.14.106.17:18082}
+          OAUTH_GITHUB_CLIENT_ID=${OAUTH_GITHUB_CLIENT_ID:-}
+          OAUTH_GITHUB_CLIENT_SECRET=${OAUTH_GITHUB_CLIENT_SECRET:-}
+          OAUTH_QQ_CLIENT_ID=${OAUTH_QQ_CLIENT_ID:-}
+          OAUTH_QQ_CLIENT_SECRET=${OAUTH_QQ_CLIENT_SECRET:-}
           EOF
           sed -i 's/^[[:space:]]*//' deploy-bundle/.env
+          # Do not print secret values
+          echo "OAuth bundle: BASE_URL set=$([ -n \"${OAUTH_BASE_URL:-}\" ] && echo yes || echo default)"
+          echo "OAuth bundle: GitHub client_id set=$([ -n \"${OAUTH_GITHUB_CLIENT_ID:-}\" ] && echo yes || echo NO)"
           printf '%s' "${DOCKER_PASSWORD}" > deploy-bundle/.docker_password
           tar -C deploy-bundle -czf deploy-bundle.tgz .
 

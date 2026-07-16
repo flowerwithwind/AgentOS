@@ -16,6 +16,12 @@ services:
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - FLASK_ENV=production
+      # OAuth — env names must NOT use GITHUB_ prefix (Actions reserved)
+      - OAUTH_BASE_URL=${OAUTH_BASE_URL:-}
+      - OAUTH_GITHUB_CLIENT_ID=${OAUTH_GITHUB_CLIENT_ID:-}
+      - OAUTH_GITHUB_CLIENT_SECRET=${OAUTH_GITHUB_CLIENT_SECRET:-}
+      - OAUTH_QQ_CLIENT_ID=${OAUTH_QQ_CLIENT_ID:-}
+      - OAUTH_QQ_CLIENT_SECRET=${OAUTH_QQ_CLIENT_SECRET:-}
     volumes:
       - xh-data:/app/database
       - xh-logs:/app/logs
